@@ -170,16 +170,20 @@ export default function UPIPayment({
                         <div className="upi-section">
                             <h3>UPI Details</h3>
                             <div className="upi-id-box">
-                                <span className="upi-id">{upiId}</span>
+                                <span className="upi-id" title={upiId}>
+                                    {maskUPIId(upiId)}
+                                </span>
                                 <button 
                                     onClick={() => copyToClipboard(upiId)}
                                     className="copy-btn"
-                                    title="Copy UPI ID"
+                                    title="Copy Full UPI ID"
                                 >
                                     {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
                                 </button>
                             </div>
-                            <p className="upi-hint">Copy the UPI ID and pay using any UPI app</p>
+                            <p className="upi-hint">
+                                {copied ? '✓ UPI ID copied! Paste it in your UPI app' : 'Click copy button to copy full UPI ID and pay using any UPI app'}
+                            </p>
                         </div>
 
                         <div className="timer-section">

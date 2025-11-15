@@ -26,7 +26,8 @@ import { Payment } from './payment/entities/payment.entity';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'salary_calculator',
       entities: [SalaryCalculation, User, AtsUsage, AtsCheck, Payment],
-      synchronize: process.env.NODE_ENV !== 'production', // Auto-sync in dev only
+      // Enable synchronize if explicitly set, or in non-production, or if DATABASE_SYNC is true
+      synchronize: process.env.DATABASE_SYNC === 'true' || process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
       ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
     }),

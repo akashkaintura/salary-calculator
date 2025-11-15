@@ -19,6 +19,20 @@ async function bootstrap() {
     }),
   );
 
+  // Root route for health check
+  app.getHttpAdapter().get('/', (req, res) => {
+    res.json({
+      message: 'Salary Calculator API',
+      status: 'running',
+      version: '1.0.0',
+      endpoints: {
+        auth: '/api/auth',
+        salary: '/api/salary',
+        ats: '/api/ats',
+      },
+    });
+  });
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`🚀 Backend server running on http://localhost:${port}`);

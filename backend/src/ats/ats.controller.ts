@@ -48,40 +48,48 @@ export class AtsController {
         @UploadedFile() file: Express.Multer.File,
         @CurrentUser() user: User,
     ): Promise<AtsCheckResult & { remaining: number; resetAt: Date }> {
-        if (!file) {
-            throw new BadRequestException('No file uploaded');
+        try {
+            if (!file) {
+                throw new BadRequestException('No file uploaded');
+            }
+
+            // Check usage limit
+            const usageCheck = await this.atsService.checkUsageLimit(user.id);
+            if (!usageCheck.allowed) {
+                const resetTime = new Date(usageCheck.resetAt).toLocaleString();
+                throw new ForbiddenException(
+                    `You have reached the limit of 3 checks. Your limit will reset at ${resetTime}`,
+                );
+            }
+
+            // Parse file
+            const resumeText = await this.atsService.parseFile(file);
+
+            // Check ATS
+            const result = await this.atsService.checkAts(resumeText);
+            result.fileSize = file.size;
+
+            // Save check result to database
+            await this.atsService.saveCheckResult(user.id, result);
+
+            // Record usage
+            await this.atsService.recordUsage(user.id);
+
+            // Get updated usage info
+            const updatedUsage = await this.atsService.checkUsageLimit(user.id);
+
+            return {
+                ...result,
+                remaining: updatedUsage.remaining,
+                resetAt: updatedUsage.resetAt,
+            };
+        } catch (error) {
+            console.error('Error in checkResume:', error);
+            if (error instanceof BadRequestException || error instanceof ForbiddenException) {
+                throw error;
+            }
+            throw new BadRequestException(`Failed to process resume: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-
-        // Check usage limit
-        const usageCheck = await this.atsService.checkUsageLimit(user.id);
-        if (!usageCheck.allowed) {
-            const resetTime = new Date(usageCheck.resetAt).toLocaleString();
-            throw new ForbiddenException(
-                `You have reached the limit of 3 checks. Your limit will reset at ${resetTime}`,
-            );
-        }
-
-        // Parse file
-        const resumeText = await this.atsService.parseFile(file);
-
-        // Check ATS
-        const result = await this.atsService.checkAts(resumeText);
-        result.fileSize = file.size;
-
-        // Save check result to database
-        await this.atsService.saveCheckResult(user.id, result);
-
-        // Record usage
-        await this.atsService.recordUsage(user.id);
-
-        // Get updated usage info
-        const updatedUsage = await this.atsService.checkUsageLimit(user.id);
-
-        return {
-            ...result,
-            remaining: updatedUsage.remaining,
-            resetAt: updatedUsage.resetAt,
-        };
     }
 
     @Get('history')

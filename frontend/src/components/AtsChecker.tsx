@@ -393,7 +393,7 @@ export default function AtsChecker() {
                                                 setError('Please log in to view check details');
                                                 return;
                                             }
-                                            
+
                                             // Load full result from history
                                             axios.get(`${API_BASE_URL}/api/ats/history/${check.id}`, {
                                                 headers: { Authorization: `Bearer ${token}` },

@@ -154,6 +154,11 @@ export class AtsService {
   }
 
   async parseFile(file: Express.Multer.File): Promise<string> {
+    // Validate file exists
+    if (!file || !file.buffer) {
+      throw new BadRequestException('File is missing or invalid');
+    }
+
     // Validate file size
     if (file.size > this.MAX_FILE_SIZE) {
       throw new BadRequestException(`File size exceeds 2MB limit. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
@@ -171,25 +176,41 @@ export class AtsService {
     }
 
     try {
+      let text = '';
+      
       if (file.mimetype === 'application/pdf') {
         const data = await pdfParse(file.buffer);
-        return data.text;
+        text = data.text || '';
       } else if (
         file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         file.mimetype === 'application/msword'
       ) {
         const result = await mammoth.extractRawText({ buffer: file.buffer });
-        return result.value;
+        text = result.value || '';
       }
+
+      if (!text || text.trim().length === 0) {
+        throw new BadRequestException('Could not extract text from file. The file may be empty or corrupted.');
+      }
+
+      return text;
     } catch (error) {
-      throw new BadRequestException('Failed to parse file. Please ensure it is a valid PDF or DOCX file.');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('File parsing error:', error);
+      throw new BadRequestException(`Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   async checkAts(resumeText: string): Promise<AtsCheckResult> {
+    if (!resumeText || resumeText.trim().length === 0) {
+      throw new BadRequestException('Resume text is empty');
+    }
+
     const lowerText = resumeText.toLowerCase();
     const words = resumeText.split(/\s+/).filter(word => word.length > 0);
-    const wordCount = words.length;
+    const wordCount = Math.max(words.length, 1); // Prevent division by zero
 
     // Count keyword matches
     const matchedKeywords = this.ATS_KEYWORDS.filter(keyword =>
@@ -221,7 +242,9 @@ export class AtsService {
     };
 
     // Detailed analysis metrics
-    const keywordDensity = Math.round((keywordMatches / wordCount) * 1000 * 100) / 100; // per 1000 words
+    const keywordDensity = wordCount > 0 
+      ? Math.round((keywordMatches / wordCount) * 1000 * 100) / 100 
+      : 0; // per 1000 words
     
     // Section completeness (0-100)
     const sections = {

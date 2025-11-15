@@ -6,7 +6,7 @@ services:
     buildCommand: NODE_ENV=development npm install && npm run build
     startCommand: npm run start:prod
     rootDir: backend
-           envVars:
+    envVars:
              - key: NODE_ENV
                value: production
              - key: PORT

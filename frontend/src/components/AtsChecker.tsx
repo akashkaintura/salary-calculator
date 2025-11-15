@@ -207,6 +207,11 @@ export default function AtsChecker() {
     };
 
     const handlePremiumUpgrade = async () => {
+        // Show under construction modal instead of payment
+        setShowUnderConstruction(true);
+        
+        // TODO: Uncomment below when payment gateway is ready
+        /*
         if (!currentCheckId || !resumeText) {
             setError('Unable to process premium upgrade. Please check your resume again.');
             return;
@@ -295,6 +300,7 @@ export default function AtsChecker() {
             setError(err.response?.data?.message || 'Failed to initiate payment');
             setLoadingPremium(false);
         }
+        */
     };
 
     return (

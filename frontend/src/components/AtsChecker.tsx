@@ -58,7 +58,7 @@ interface AtsHistoryItem {
 }
 
 export default function AtsChecker() {
-    const { token } = useAuth();
+    const { token, user, logout } = useAuth();
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -102,6 +102,8 @@ export default function AtsChecker() {
     };
 
     const checkUsage = async () => {
+        if (!token) return;
+        
         try {
             const response = await axios.post(
                 `${API_BASE_URL}/api/ats/usage`,
@@ -111,7 +113,10 @@ export default function AtsChecker() {
                 }
             );
             setUsage(response.data);
-        } catch (err) {
+        } catch (err: any) {
+            if (err.response?.status === 401) {
+                logout();
+            }
             console.error('Failed to fetch usage:', err);
         }
     };
@@ -120,6 +125,11 @@ export default function AtsChecker() {
         e.preventDefault();
         if (!file) {
             setError('Please select a file');
+            return;
+        }
+
+        if (!token) {
+            setError('Please log in to check your resume');
             return;
         }
 
@@ -156,12 +166,15 @@ export default function AtsChecker() {
                 }
             }, 500);
         } catch (err: any) {
-            if (err.response?.status === 403) {
+            if (err.response?.status === 401) {
+                setError('Your session has expired. Please log in again.');
+                logout();
+            } else if (err.response?.status === 403) {
                 setError(err.response.data.message || 'You have reached the limit of 3 checks');
             } else if (err.response?.status === 400) {
                 setError(err.response.data.message || 'Invalid file. Please check the file format and size.');
             } else {
-                setError('Failed to check resume. Please try again.');
+                setError(err.response?.data?.message || 'Failed to check resume. Please try again.');
             }
         } finally {
             setLoading(false);
@@ -169,6 +182,8 @@ export default function AtsChecker() {
     };
 
     const loadHistory = async () => {
+        if (!token) return;
+        
         try {
             const response = await axios.get<AtsHistoryItem[]>(
                 `${API_BASE_URL}/api/ats/history`,
@@ -181,7 +196,10 @@ export default function AtsChecker() {
             if (response.data.length > 0 && !currentCheckId) {
                 setCurrentCheckId(response.data[0].id);
             }
-        } catch (err) {
+        } catch (err: any) {
+            if (err.response?.status === 401) {
+                logout();
+            }
             console.error('Failed to load history:', err);
         }
     };

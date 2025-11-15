@@ -46,6 +46,21 @@ export class AtsCheck {
   @Column({ type: 'jsonb', default: [] })
   weaknesses: string[];
 
+  @Column({ type: 'jsonb', nullable: true })
+  companyComparisons: {
+    goldmanSachs: { score: number; match: string };
+    google: { score: number; match: string };
+  };
+
+  @Column({ type: 'jsonb', nullable: true })
+  detailedAnalysis: {
+    keywordDensity: number;
+    sectionCompleteness: number;
+    actionVerbUsage: number;
+    quantifiableResults: number;
+    technicalSkills: number;
+  };
+
   @CreateDateColumn()
   createdAt: Date;
 

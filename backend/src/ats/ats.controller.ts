@@ -7,6 +7,8 @@ import {
     UploadedFile,
     BadRequestException,
     ForbiddenException,
+    Param,
+    NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -85,6 +87,12 @@ export class AtsController {
     @UseGuards(JwtAuthGuard)
     async getHistory(@CurrentUser() user: User) {
         return this.atsService.getUserChecks(user.id);
+    }
+
+    @Get('history/:id')
+    @UseGuards(JwtAuthGuard)
+    async getCheckById(@CurrentUser() user: User, @Param('id') id: string) {
+        return this.atsService.getCheckById(id, user.id);
     }
 
     @Post('usage')

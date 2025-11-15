@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Upload, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { FileText, Upload, CheckCircle, XCircle, AlertCircle, Clock, History, TrendingUp, Building2 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import './AtsChecker.css';
@@ -22,6 +22,29 @@ interface AtsResult {
     wordCount: number;
     remaining: number;
     resetAt: string;
+    companyComparisons?: {
+        goldmanSachs: { score: number; match: string };
+        google: { score: number; match: string };
+    };
+    detailedAnalysis?: {
+        keywordDensity: number;
+        sectionCompleteness: number;
+        actionVerbUsage: number;
+        quantifiableResults: number;
+        technicalSkills: number;
+    };
+}
+
+interface AtsHistoryItem {
+    id: string;
+    score: number;
+    wordCount: number;
+    keywordMatches: number;
+    createdAt: string;
+    companyComparisons?: {
+        goldmanSachs: { score: number; match: string };
+        google: { score: number; match: string };
+    };
 }
 
 export default function AtsChecker() {
@@ -31,6 +54,8 @@ export default function AtsChecker() {
     const [error, setError] = useState('');
     const [result, setResult] = useState<AtsResult | null>(null);
     const [usage, setUsage] = useState<{ remaining: number; resetAt: string } | null>(null);
+    const [history, setHistory] = useState<AtsHistoryItem[]>([]);
+    const [showHistory, setShowHistory] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -99,6 +124,7 @@ export default function AtsChecker() {
 
             setResult(response.data);
             setUsage({ remaining: response.data.remaining, resetAt: response.data.resetAt });
+            loadHistory(); // Refresh history after new check
         } catch (err: any) {
             if (err.response?.status === 403) {
                 setError(err.response.data.message || 'You have reached the limit of 3 checks');
@@ -112,10 +138,25 @@ export default function AtsChecker() {
         }
     };
 
-    // Load usage on mount
+    const loadHistory = async () => {
+        try {
+            const response = await axios.get<AtsHistoryItem[]>(
+                `${API_BASE_URL}/api/ats/history`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            setHistory(response.data);
+        } catch (err) {
+            console.error('Failed to load history:', err);
+        }
+    };
+
+    // Load usage and history on mount
     useEffect(() => {
         if (token) {
             checkUsage();
+            loadHistory();
         }
     }, [token]);
 
@@ -139,6 +180,13 @@ export default function AtsChecker() {
                     <h2>Resume ATS Checker</h2>
                     <p>Get your resume analyzed for ATS compatibility</p>
                 </div>
+                <button 
+                    onClick={() => setShowHistory(!showHistory)} 
+                    className="history-toggle-btn"
+                    title="View History"
+                >
+                    <History size={20} />
+                </button>
             </div>
 
             {usage && (
@@ -196,6 +244,44 @@ export default function AtsChecker() {
                 </button>
             </form>
 
+            <div className="ats-main-content">
+                {showHistory && history.length > 0 && (
+                    <div className="ats-history-sidebar">
+                        <h3>Check History</h3>
+                        <div className="ats-history-list">
+                            {history.map((check) => (
+                                <div 
+                                    key={check.id} 
+                                    className="ats-history-item"
+                                    onClick={() => {
+                                        // Load full result from history
+                                        axios.get(`${API_BASE_URL}/api/ats/history/${check.id}`, {
+                                            headers: { Authorization: `Bearer ${token}` },
+                                        }).then(res => {
+                                            setResult(res.data);
+                                            setShowHistory(false);
+                                        }).catch(err => console.error('Failed to load check:', err));
+                                    }}
+                                >
+                                    <div className="ats-history-header">
+                                        <span className="ats-history-score" style={{ color: getScoreColor(check.score) }}>
+                                            {check.score}
+                                        </span>
+                                        <span className="ats-history-date">
+                                            {new Date(check.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <div className="ats-history-details">
+                                        <span>{check.keywordMatches} keywords</span>
+                                        <span>{check.wordCount} words</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="ats-content-wrapper">
             {result && (
                 <div className="ats-result">
                     <div className="score-section">
@@ -222,6 +308,94 @@ export default function AtsChecker() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Company Comparisons */}
+                    {result.companyComparisons && (
+                        <div className="company-comparisons">
+                            <h3>
+                                <Building2 size={20} />
+                                Company Match Scores
+                            </h3>
+                            <div className="company-cards">
+                                <div className="company-card">
+                                    <div className="company-name">Goldman Sachs</div>
+                                    <div className="company-score" style={{ color: getScoreColor(result.companyComparisons.goldmanSachs.score) }}>
+                                        {result.companyComparisons.goldmanSachs.score}
+                                    </div>
+                                    <div className="company-match">{result.companyComparisons.goldmanSachs.match}</div>
+                                </div>
+                                <div className="company-card">
+                                    <div className="company-name">Google</div>
+                                    <div className="company-score" style={{ color: getScoreColor(result.companyComparisons.google.score) }}>
+                                        {result.companyComparisons.google.score}
+                                    </div>
+                                    <div className="company-match">{result.companyComparisons.google.match}</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Detailed Analysis */}
+                    {result.detailedAnalysis && (
+                        <div className="detailed-analysis">
+                            <h3>
+                                <TrendingUp size={20} />
+                                Detailed Analysis
+                            </h3>
+                            <div className="analysis-grid">
+                                <div className="analysis-item">
+                                    <span className="analysis-label">Keyword Density</span>
+                                    <div className="analysis-bar">
+                                        <div 
+                                            className="analysis-bar-fill" 
+                                            style={{ width: `${Math.min(result.detailedAnalysis.keywordDensity, 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="analysis-value">{result.detailedAnalysis.keywordDensity.toFixed(1)} per 1000 words</span>
+                                </div>
+                                <div className="analysis-item">
+                                    <span className="analysis-label">Section Completeness</span>
+                                    <div className="analysis-bar">
+                                        <div 
+                                            className="analysis-bar-fill" 
+                                            style={{ width: `${result.detailedAnalysis.sectionCompleteness}%` }}
+                                        />
+                                    </div>
+                                    <span className="analysis-value">{result.detailedAnalysis.sectionCompleteness}%</span>
+                                </div>
+                                <div className="analysis-item">
+                                    <span className="analysis-label">Action Verb Usage</span>
+                                    <div className="analysis-bar">
+                                        <div 
+                                            className="analysis-bar-fill" 
+                                            style={{ width: `${result.detailedAnalysis.actionVerbUsage}%` }}
+                                        />
+                                    </div>
+                                    <span className="analysis-value">{result.detailedAnalysis.actionVerbUsage}%</span>
+                                </div>
+                                <div className="analysis-item">
+                                    <span className="analysis-label">Quantifiable Results</span>
+                                    <div className="analysis-bar">
+                                        <div 
+                                            className="analysis-bar-fill" 
+                                            style={{ width: `${result.detailedAnalysis.quantifiableResults}%` }}
+                                        />
+                                    </div>
+                                    <span className="analysis-value">{result.detailedAnalysis.quantifiableResults > 0 ? 'Present' : 'Missing'}</span>
+                                </div>
+                                <div className="analysis-item">
+                                    <span className="analysis-label">Technical Skills</span>
+                                    <div className="analysis-bar">
+                                        <div 
+                                            className="analysis-bar-fill" 
+                                            style={{ width: `${result.detailedAnalysis.technicalSkills}%` }}
+                                        />
+                                    </div>
+                                    <span className="analysis-value">{result.detailedAnalysis.technicalSkills}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {result.strengths.length > 0 && (
                         <div className="strengths-section">
@@ -273,6 +447,8 @@ export default function AtsChecker() {
                     </div>
                 </div>
             )}
+                </div>
+            </div>
         </div>
     );
 }

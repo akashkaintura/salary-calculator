@@ -186,7 +186,7 @@ export default function AtsChecker() {
                     </div>
                 )}
 
-                <button type="submit" className="check-btn" disabled={loading || !file || (usage?.remaining === 0 ?? false)}>
+                <button type="submit" className="check-btn" disabled={loading || !file || (usage?.remaining === 0 || false)}>
                     {loading ? 'Analyzing...' : 'Check Resume'}
                 </button>
             </form>

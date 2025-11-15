@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SalaryModule } from './salary/salary.module';
 import { AuthModule } from './auth/auth.module';
 import { AtsModule } from './ats/ats.module';
+import { PaymentModule } from './payment/payment.module';
 import { SalaryCalculation } from './salary/entities/salary-calculation.entity';
 import { User } from './user/entities/user.entity';
 import { AtsUsage } from './ats/entities/ats-usage.entity';
@@ -31,6 +32,7 @@ import { AtsCheck } from './ats/entities/ats-check.entity';
     SalaryModule,
     AuthModule,
     AtsModule,
+    PaymentModule,
   ],
 })
 export class AppModule { }

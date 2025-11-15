@@ -47,10 +47,7 @@ export class AtsCheck {
   weaknesses: string[];
 
   @Column({ type: 'jsonb', nullable: true })
-  companyComparisons: {
-    goldmanSachs: { score: number; match: string };
-    google: { score: number; match: string };
-  };
+  companyComparisons: Record<string, { score: number; match: string }>;
 
   @Column({ type: 'jsonb', nullable: true })
   detailedAnalysis: {

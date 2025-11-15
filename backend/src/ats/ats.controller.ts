@@ -9,6 +9,7 @@ import {
     ForbiddenException,
     Param,
     NotFoundException,
+    Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -93,6 +94,49 @@ export class AtsController {
     @UseGuards(JwtAuthGuard)
     async getCheckById(@CurrentUser() user: User, @Param('id') id: string) {
         return this.atsService.getCheckById(id, user.id);
+    }
+
+    @Post('premium/enhance')
+    @UseGuards(JwtAuthGuard)
+    async enhanceWithPremium(
+        @CurrentUser() user: User,
+        @Body() body: { checkId: string; resumeText: string },
+    ) {
+        const check = await this.atsService.getCheckById(body.checkId, user.id);
+        
+        // Reconstruct check result from saved data
+        const checkResult = {
+            score: check.score,
+            suggestions: check.suggestions || [],
+            strengths: check.strengths || [],
+            weaknesses: check.weaknesses || [],
+            keywordMatches: check.keywordMatches,
+            totalKeywords: check.totalKeywords,
+            fileSize: check.fileSize,
+            wordCount: check.wordCount,
+            companyComparisons: {
+                goldmanSachs: { score: 0, match: '' },
+                google: { score: 0, match: '' },
+                allCompanies: check.companyComparisons || {},
+            },
+            detailedAnalysis: check.detailedAnalysis || {
+                keywordDensity: 0,
+                sectionCompleteness: 0,
+                actionVerbUsage: 0,
+                quantifiableResults: 0,
+                technicalSkills: 0,
+            },
+        };
+
+        const premiumFeatures = await this.atsService.generatePremiumEnhancements(
+            body.resumeText,
+            checkResult as any,
+        );
+
+        return {
+            ...checkResult,
+            premiumFeatures,
+        };
     }
 
     @Post('usage')

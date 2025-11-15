@@ -20,6 +20,8 @@ export interface AtsCheckResult {
   companyComparisons: {
     goldmanSachs: { score: number; match: string };
     google: { score: number; match: string };
+    // Premium: all companies
+    allCompanies?: Record<string, { score: number; match: string }>;
   };
   detailedAnalysis: {
     keywordDensity: number;
@@ -27,6 +29,14 @@ export interface AtsCheckResult {
     actionVerbUsage: number;
     quantifiableResults: number;
     technicalSkills: number;
+  };
+  // Premium features
+  premiumFeatures?: {
+    optimizedKeywords: string[];
+    industrySpecificSuggestions: string[];
+    resumeOptimizationTips: string[];
+    missingKeywords: string[];
+    keywordReplacements: Array<{ current: string; suggested: string; reason: string }>;
   };
 }
 
@@ -48,21 +58,58 @@ export class AtsService {
     'api', 'rest', 'git', 'agile', 'scrum', 'devops', 'cloud', 'aws',
   ];
 
-  // Company-specific keywords
-  private readonly GOLDMAN_SACHS_KEYWORDS = [
-    'finance', 'financial', 'analytics', 'risk', 'trading', 'investment',
-    'quantitative', 'modeling', 'derivatives', 'portfolio', 'compliance',
-    'regulatory', 'excel', 'vba', 'sql', 'python', 'r', 'statistics',
-    'mba', 'cfa', 'leadership', 'client', 'stakeholder', 'strategy',
-  ];
-
-  private readonly GOOGLE_KEYWORDS = [
-    'algorithm', 'data structure', 'system design', 'distributed systems',
-    'machine learning', 'ai', 'python', 'java', 'c++', 'go', 'javascript',
-    'react', 'angular', 'kubernetes', 'docker', 'cloud', 'gcp', 'aws',
-    'scalability', 'performance', 'optimization', 'open source', 'github',
-    'leetcode', 'competitive programming', 'bachelor', 'master', 'phd',
-  ];
+  // Company-specific keywords for ATS matching
+  private readonly COMPANY_KEYWORDS = {
+    goldmanSachs: [
+      'finance', 'financial', 'analytics', 'risk', 'trading', 'investment',
+      'quantitative', 'modeling', 'derivatives', 'portfolio', 'compliance',
+      'regulatory', 'excel', 'vba', 'sql', 'python', 'r', 'statistics',
+      'mba', 'cfa', 'leadership', 'client', 'stakeholder', 'strategy',
+    ],
+    google: [
+      'algorithm', 'data structure', 'system design', 'distributed systems',
+      'machine learning', 'ai', 'python', 'java', 'c++', 'go', 'javascript',
+      'react', 'angular', 'kubernetes', 'docker', 'cloud', 'gcp', 'aws',
+      'scalability', 'performance', 'optimization', 'open source', 'github',
+      'leetcode', 'competitive programming', 'bachelor', 'master', 'phd',
+    ],
+    amazon: [
+      'aws', 'cloud', 'distributed systems', 'scalability', 'microservices',
+      'java', 'python', 'javascript', 'react', 'node', 'docker', 'kubernetes',
+      'customer obsession', 'leadership principles', 'agile', 'scrum',
+      'data structures', 'algorithms', 'system design', 'api', 'rest',
+    ],
+    microsoft: [
+      'azure', 'cloud', 'c#', 'dotnet', 'typescript', 'javascript', 'react',
+      'angular', 'sql server', 'power bi', 'office 365', 'teams',
+      'enterprise', 'saas', 'paas', 'machine learning', 'ai', 'cognitive services',
+      'agile', 'scrum', 'devops', 'ci/cd', 'git', 'github',
+    ],
+    meta: [
+      'react', 'javascript', 'typescript', 'python', 'php', 'hack',
+      'graphql', 'apollo', 'relay', 'machine learning', 'ai', 'computer vision',
+      'distributed systems', 'scalability', 'performance', 'mobile', 'ios', 'android',
+      'open source', 'github', 'agile', 'data structures', 'algorithms',
+    ],
+    apple: [
+      'swift', 'objective-c', 'ios', 'macos', 'xcode', 'cocoa', 'core data',
+      'ui/ux', 'design', 'human interface guidelines', 'metal', 'core ml',
+      'machine learning', 'computer vision', 'ar', 'vr', 'arkit',
+      'agile', 'scrum', 'git', 'github', 'test driven development',
+    ],
+    netflix: [
+      'java', 'python', 'javascript', 'react', 'node', 'microservices',
+      'distributed systems', 'scalability', 'performance', 'streaming',
+      'data engineering', 'machine learning', 'recommendation systems',
+      'aws', 'cloud', 'docker', 'kubernetes', 'ci/cd', 'agile',
+    ],
+    uber: [
+      'python', 'java', 'go', 'javascript', 'react', 'mobile', 'ios', 'android',
+      'distributed systems', 'microservices', 'scalability', 'real-time',
+      'machine learning', 'data science', 'maps', 'gps', 'location services',
+      'agile', 'scrum', 'docker', 'kubernetes', 'aws', 'cloud',
+    ],
+  };
 
   constructor(
     @InjectRepository(AtsUsage)
@@ -151,17 +198,19 @@ export class AtsService {
     const keywordMatches = matchedKeywords.length;
     const totalKeywords = this.ATS_KEYWORDS.length;
 
-    // Company-specific keyword matching
-    const goldmanMatches = this.GOLDMAN_SACHS_KEYWORDS.filter(keyword =>
-      lowerText.includes(keyword.toLowerCase())
-    ).length;
-    const googleMatches = this.GOOGLE_KEYWORDS.filter(keyword =>
-      lowerText.includes(keyword.toLowerCase())
-    ).length;
+    // Company-specific keyword matching (all companies)
+    const companyScores: Record<string, { score: number; matches: number; total: number }> = {};
+    for (const [company, keywords] of Object.entries(this.COMPANY_KEYWORDS)) {
+      const matches = keywords.filter(keyword =>
+        lowerText.includes(keyword.toLowerCase())
+      ).length;
+      const score = Math.round((matches / keywords.length) * 100);
+      companyScores[company] = { score, matches, total: keywords.length };
+    }
 
-    // Calculate company-specific scores
-    const goldmanScore = Math.round((goldmanMatches / this.GOLDMAN_SACHS_KEYWORDS.length) * 100);
-    const googleScore = Math.round((googleMatches / this.GOOGLE_KEYWORDS.length) * 100);
+    // For free version, show only Goldman Sachs and Google
+    const goldmanScore = companyScores.goldmanSachs?.score || 0;
+    const googleScore = companyScores.google?.score || 0;
 
     // Determine match level
     const getMatchLevel = (score: number): string => {
@@ -280,13 +329,19 @@ export class AtsService {
       strengths.push(`Strong technical skills coverage (${foundTechSkills.length} skills found)`);
     }
 
-    // Company-specific suggestions
+    // Company-specific suggestions (free version - limited)
     if (goldmanScore < 50) {
       suggestions.push('For Goldman Sachs: Add finance, analytics, risk management, and quantitative skills');
     }
     if (googleScore < 50) {
       suggestions.push('For Google: Emphasize algorithms, system design, distributed systems, and technical depth');
     }
+
+    // Store all company scores for premium features
+    const allCompanyScores = Object.entries(companyScores).reduce((acc, [company, data]) => {
+      acc[company] = { score: data.score, match: getMatchLevel(data.score) };
+      return acc;
+    }, {} as Record<string, { score: number; match: string }>);
 
     return {
       score,
@@ -306,6 +361,7 @@ export class AtsService {
           score: googleScore,
           match: getMatchLevel(googleScore),
         },
+        allCompanies: allCompanyScores, // For premium
       },
       detailedAnalysis: {
         keywordDensity,
@@ -315,6 +371,169 @@ export class AtsService {
         technicalSkills,
       },
     };
+  }
+
+  // Premium enhancement features
+  async generatePremiumEnhancements(resumeText: string, checkResult: AtsCheckResult): Promise<AtsCheckResult['premiumFeatures']> {
+    const lowerText = resumeText.toLowerCase();
+    const words = resumeText.split(/\s+/).filter(word => word.length > 0);
+
+    // Collect all company keywords
+    const allKeywords = new Set<string>();
+    Object.values(this.COMPANY_KEYWORDS).forEach(keywords => {
+      keywords.forEach(kw => allKeywords.add(kw.toLowerCase()));
+    });
+
+    // Find missing important keywords
+    const missingKeywords: string[] = [];
+    const foundKeywords = new Set<string>();
+    
+    allKeywords.forEach(keyword => {
+      if (lowerText.includes(keyword)) {
+        foundKeywords.add(keyword);
+      } else {
+        // Only suggest high-value keywords
+        if (this.isHighValueKeyword(keyword)) {
+          missingKeywords.push(keyword);
+        }
+      }
+    });
+
+    // Generate optimized keywords (industry-specific)
+    const optimizedKeywords = this.generateOptimizedKeywords(lowerText, missingKeywords.slice(0, 20));
+
+    // Get all company scores from checkResult
+    const allCompanyScores = checkResult.companyComparisons.allCompanies || {};
+
+    // Industry-specific suggestions
+    const industrySuggestions = this.generateIndustrySuggestions(checkResult, allCompanyScores);
+
+    // Resume optimization tips
+    const optimizationTips = this.generateOptimizationTips(checkResult, resumeText);
+
+    // Keyword replacement suggestions
+    const keywordReplacements = this.generateKeywordReplacements(resumeText, lowerText);
+
+    return {
+      optimizedKeywords: optimizedKeywords.slice(0, 30),
+      industrySpecificSuggestions: industrySuggestions,
+      resumeOptimizationTips: optimizationTips,
+      missingKeywords: missingKeywords.slice(0, 25),
+      keywordReplacements: keywordReplacements.slice(0, 15),
+    };
+  }
+
+  private isHighValueKeyword(keyword: string): boolean {
+    const highValue = [
+      'machine learning', 'ai', 'cloud', 'aws', 'azure', 'docker', 'kubernetes',
+      'distributed systems', 'system design', 'scalability', 'microservices',
+      'python', 'java', 'javascript', 'react', 'node', 'sql', 'algorithm',
+      'data structure', 'agile', 'scrum', 'devops', 'ci/cd',
+    ];
+    return highValue.some(hv => keyword.includes(hv) || hv.includes(keyword));
+  }
+
+  private generateOptimizedKeywords(resumeText: string, missingKeywords: string[]): string[] {
+    // Prioritize keywords based on industry trends
+    const prioritized = missingKeywords.sort((a, b) => {
+      const aPriority = this.getKeywordPriority(a);
+      const bPriority = this.getKeywordPriority(b);
+      return bPriority - aPriority;
+    });
+    return prioritized;
+  }
+
+  private getKeywordPriority(keyword: string): number {
+    // Higher priority for trending/important keywords
+    if (keyword.includes('machine learning') || keyword.includes('ai')) return 10;
+    if (keyword.includes('cloud') || keyword.includes('aws') || keyword.includes('azure')) return 9;
+    if (keyword.includes('docker') || keyword.includes('kubernetes')) return 8;
+    if (keyword.includes('system design') || keyword.includes('distributed')) return 8;
+    if (keyword.includes('python') || keyword.includes('java') || keyword.includes('javascript')) return 7;
+    return 5;
+  }
+
+  private generateIndustrySuggestions(
+    checkResult: AtsCheckResult,
+    companyScores: Record<string, { score: number; match: string }>
+  ): string[] {
+    const suggestions: string[] = [];
+    
+    // Find companies with low scores
+    Object.entries(companyScores).forEach(([company, data]) => {
+      if (data.score < 50) {
+        const companyName = company.charAt(0).toUpperCase() + company.slice(1).replace(/([A-Z])/g, ' $1');
+        suggestions.push(`For ${companyName}: Focus on adding relevant keywords from their tech stack and requirements`);
+      }
+    });
+
+    // Industry-specific advice
+    if (checkResult.detailedAnalysis.technicalSkills < 50) {
+      suggestions.push('Add more technical skills relevant to your target industry');
+    }
+    if (checkResult.detailedAnalysis.quantifiableResults === 0) {
+      suggestions.push('Include metrics and numbers to quantify your achievements (e.g., "increased performance by 40%")');
+    }
+
+    return suggestions;
+  }
+
+  private generateOptimizationTips(checkResult: AtsCheckResult, resumeText: string): string[] {
+    const tips: string[] = [];
+
+    if (checkResult.score < 70) {
+      tips.push('Your resume needs optimization. Focus on adding more relevant keywords and quantifiable achievements.');
+    }
+
+    if (checkResult.detailedAnalysis.sectionCompleteness < 100) {
+      tips.push('Ensure all sections (Contact, Experience, Education, Skills) are clearly labeled and complete.');
+    }
+
+    if (checkResult.detailedAnalysis.actionVerbUsage < 50) {
+      tips.push('Use more action verbs to start bullet points (e.g., "Developed", "Implemented", "Led", "Optimized").');
+    }
+
+    if (checkResult.wordCount < 300) {
+      tips.push('Expand your resume with more detailed descriptions of your achievements and responsibilities.');
+    } else if (checkResult.wordCount > 800) {
+      tips.push('Consider condensing your resume to 1-2 pages for better ATS compatibility.');
+    }
+
+    // Formatting tips
+    if (!/^\s*[A-Z]/.test(resumeText)) {
+      tips.push('Ensure your resume starts with a clear header section with your name and contact information.');
+    }
+
+    return tips;
+  }
+
+  private generateKeywordReplacements(resumeText: string, lowerText: string): Array<{ current: string; suggested: string; reason: string }> {
+    const replacements: Array<{ current: string; suggested: string; reason: string }> = [];
+
+    // Common weak words to replace
+    const weakWords = {
+      'worked on': 'developed',
+      'did': 'implemented',
+      'made': 'created',
+      'helped': 'contributed to',
+      'tried': 'attempted',
+      'fixed': 'resolved',
+      'used': 'utilized',
+      'good at': 'proficient in',
+      'know': 'experienced with',
+    };
+
+    Object.entries(weakWords).forEach(([weak, strong]) => {
+      if (lowerText.includes(weak)) {
+        replacements.push({
+          current: weak,
+          suggested: strong,
+          reason: `"${strong}" is more impactful and ATS-friendly than "${weak}"`,
+        });
+      }
+    });
+
+    return replacements;
   }
 
   async saveCheckResult(userId: string, result: AtsCheckResult): Promise<AtsCheck> {
@@ -328,7 +547,7 @@ export class AtsService {
       suggestions: result.suggestions,
       strengths: result.strengths,
       weaknesses: result.weaknesses,
-      companyComparisons: result.companyComparisons,
+      companyComparisons: result.companyComparisons.allCompanies || {},
       detailedAnalysis: result.detailedAnalysis,
     });
     return await this.atsCheckRepository.save(check);

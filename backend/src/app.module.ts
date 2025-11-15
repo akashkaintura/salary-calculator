@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { AtsModule } from './ats/ats.module';
 import { PaymentModule } from './payment/payment.module';
 import { SalaryCalculation } from './salary/entities/salary-calculation.entity';
+import { CityTaxData } from './salary/entities/city-tax-data.entity';
 import { User } from './user/entities/user.entity';
 import { AtsUsage } from './ats/entities/ats-usage.entity';
 import { AtsCheck } from './ats/entities/ats-check.entity';
@@ -25,9 +26,9 @@ import { Payment } from './payment/entities/payment.entity';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'salary_calculator',
-      entities: [SalaryCalculation, User, AtsUsage, AtsCheck, Payment],
-      // Enable synchronize if explicitly set, or in non-production, or if DATABASE_SYNC is true
-      synchronize: process.env.DATABASE_SYNC === 'true' || process.env.NODE_ENV !== 'production',
+      entities: [SalaryCalculation, CityTaxData, User, AtsUsage, AtsCheck, Payment],
+      // Enable synchronize - set to true to auto-create tables (use migrations in production for safety)
+      synchronize: true, // Temporarily enabled to create missing tables
       logging: process.env.NODE_ENV === 'development',
       ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
     }),

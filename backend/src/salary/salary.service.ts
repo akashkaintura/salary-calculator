@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SalaryCalculation } from './entities/salary-calculation.entity';
+import { CityTaxData } from './entities/city-tax-data.entity';
 import { CalculateSalaryDto } from './dto/calculate-salary.dto';
+import { CreateCityTaxDto } from './dto/create-city-tax.dto';
 
 export interface SalaryBreakdown {
   ctc: number;
@@ -26,10 +28,12 @@ export class SalaryService {
   constructor(
     @InjectRepository(SalaryCalculation)
     private salaryRepository: Repository<SalaryCalculation>,
+    @InjectRepository(CityTaxData)
+    private cityTaxRepository: Repository<CityTaxData>,
   ) { }
 
   async calculateSalary(dto: CalculateSalaryDto, userId: string): Promise<SalaryBreakdown> {
-    const breakdown = this.calculateIndianSalary(
+    const breakdown = await this.calculateIndianSalary(
       dto.ctc,
       dto.city,
       dto.variablePay || 0,
@@ -47,12 +51,12 @@ export class SalaryService {
     return breakdown;
   }
 
-  private calculateIndianSalary(
+  private async calculateIndianSalary(
     ctc: number,
     city: string,
     variablePay: number = 0,
     insurance: number = 0,
-  ): SalaryBreakdown {
+  ): Promise<SalaryBreakdown> {
     // Fixed CTC = Total CTC - Variable Pay - Insurance
     // Variable pay and insurance are part of CTC but not part of monthly salary
     const fixedCtc = ctc - variablePay - insurance;
@@ -70,8 +74,8 @@ export class SalaryService {
     // ESI: 0.75% of gross (if applicable, typically for salary < 21,000)
     const esi = grossMonthly < 21000 ? grossMonthly * 0.0075 : 0;
 
-    // Professional Tax (varies by state)
-    const professionalTax = this.getProfessionalTax(city, grossMonthly);
+    // Professional Tax (varies by state) - fetch from database
+    const professionalTax = await this.getProfessionalTax(city, grossMonthly);
 
     // Income Tax calculation (simplified, based on new tax regime)
     // Tax is calculated on fixed CTC (variable pay may be taxed separately when received)
@@ -101,8 +105,17 @@ export class SalaryService {
     };
   }
 
-  private getProfessionalTax(city: string, grossMonthly: number): number {
-    // Professional tax varies by state (approximate values)
+  private async getProfessionalTax(city: string, grossMonthly: number): Promise<number> {
+    // Try to get from database first
+    const cityTaxData = await this.cityTaxRepository.findOne({
+      where: { city },
+    });
+
+    if (cityTaxData) {
+      return Number(cityTaxData.professionalTax);
+    }
+
+    // Fallback to hardcoded values if not in database
     const stateTaxMap: { [key: string]: number } = {
       Mumbai: 200,
       Pune: 200,

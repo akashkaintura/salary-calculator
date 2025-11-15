@@ -114,12 +114,12 @@ export class StatisticsService {
     const allPayments = await this.paymentRepository.find({
       select: ['amount', 'status'],
     });
-    const successfulPayments = allPayments.filter(p => p.status === 'COMPLETED');
+    const successfulPayments = allPayments.filter(p => p.status === PaymentStatus.COMPLETED);
     const totalRevenue = successfulPayments.reduce(
       (sum, p) => sum + Number(p.amount),
       0
     );
-    const pendingPayments = allPayments.filter(p => p.status === 'PENDING').length;
+    const pendingPayments = allPayments.filter(p => p.status === PaymentStatus.PENDING).length;
     const premiumUpgrades = successfulPayments.length;
 
     return {

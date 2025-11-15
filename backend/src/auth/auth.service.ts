@@ -14,6 +14,7 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async validateGitHubUser(profile: any) {
@@ -24,6 +25,10 @@ export class AuthService {
     });
 
     if (!user) {
+      // Check if this is the first user (make them admin)
+      const userCount = await this.userRepository.count();
+      const role = userCount === 0 ? UserRole.ADMIN : UserRole.USER;
+
       user = this.userRepository.create({
         githubId: id.toString(),
         username: username || displayName || `user_${id}`,
@@ -31,6 +36,7 @@ export class AuthService {
         avatarUrl: photos?.[0]?.value || null,
         email: emails?.[0]?.value || null,
         githubProfile: profileUrl || `https://github.com/${username}`,
+        role,
       });
       await this.userRepository.save(user);
     } else {
@@ -47,7 +53,7 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { sub: user.id, username: user.username };
+    const payload = { sub: user.id, username: user.username, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -58,6 +64,7 @@ export class AuthService {
         email: user.email,
         githubProfile: user.githubProfile,
         linkedinProfile: user.linkedinProfile,
+        role: user.role,
       },
     };
   }
@@ -92,6 +99,10 @@ export class AuthService {
       counter++;
     }
 
+    // Check if this is the first user (make them admin)
+    const userCount = await this.userRepository.count();
+    const role = userCount === 0 ? UserRole.ADMIN : UserRole.USER;
+
     // Create user
     const user = this.userRepository.create({
       email,
@@ -99,6 +110,7 @@ export class AuthService {
       username,
       displayName: displayName || baseUsername,
       avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || email)}&background=667eea&color=fff`,
+      role,
     });
 
     await this.userRepository.save(user);

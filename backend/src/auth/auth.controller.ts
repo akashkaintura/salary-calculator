@@ -51,6 +51,8 @@ export class AuthController {
       email: user.email,
       githubProfile: user.githubProfile,
       linkedinProfile: user.linkedinProfile,
+      role: user.role,
+      isAdmin: user.role === 'admin',
     };
   }
 

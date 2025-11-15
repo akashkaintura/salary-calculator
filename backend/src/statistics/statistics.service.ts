@@ -63,15 +63,12 @@ export class StatisticsService {
     // User Statistics
     const totalUsers = await this.userRepository.count();
     const activeUsers = await this.userRepository.count({ where: { isActive: true } });
-    const adminUsers = await this.userRepository.count({ where: { role: 'admin' } });
+    const adminUsers = await this.userRepository.count({ where: { role: UserRole.ADMIN } });
     const regularUsers = totalUsers - adminUsers;
-    const registeredThisMonth = await this.userRepository.count({
-      where: {
-        createdAt: {
-          $gte: startOfMonth,
-        } as any,
-      },
-    });
+    const registeredThisMonth = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :startOfMonth', { startOfMonth })
+      .getCount();
 
     // Salary Statistics
     const allCalculations = await this.salaryRepository.find({

@@ -19,9 +19,12 @@ export default function UPIPayment({
     upiId,
     merchantName 
 }: UPIPaymentProps) {
+    const { token } = useAuth();
     const [step, setStep] = useState<'details' | 'processing' | 'success' | 'failed'>('details');
     const [copied, setCopied] = useState(false);
     const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+    const [verifying, setVerifying] = useState(false);
+    const [error, setError] = useState<string>('');
 
     // Countdown timer
     useEffect(() => {
@@ -63,12 +66,36 @@ export default function UPIPayment({
     };
 
     const handleVerifyPayment = async () => {
-        // This will be called when user confirms payment
-        // In real implementation, you'd verify with backend
-        setStep('success');
-        setTimeout(() => {
-            onSuccess();
-        }, 2000);
+        setVerifying(true);
+        setError('');
+
+        try {
+            // Verify payment with backend
+            const verifyResponse = await axios.post(
+                `${API_BASE_URL}/api/payment/verify-upi`,
+                {
+                    orderId: orderId,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            if (verifyResponse.data.success) {
+                setStep('success');
+                setTimeout(() => {
+                    onSuccess();
+                }, 2000);
+            } else {
+                setError('Payment verification failed. Please try again.');
+                setStep('failed');
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to verify payment. Please try again.');
+            setStep('failed');
+        } finally {
+            setVerifying(false);
+        }
     };
 
     return (
@@ -121,14 +148,34 @@ export default function UPIPayment({
                             <span>Complete payment within {formatTime(timeLeft)}</span>
                         </div>
 
+                        {error && (
+                            <div className="payment-error">
+                                <AlertCircle size={18} />
+                                {error}
+                            </div>
+                        )}
+
                         <div className="payment-actions">
-                            <button onClick={initiateUPI} className="pay-btn primary">
+                            <button onClick={initiateUPI} className="pay-btn primary" disabled={verifying}>
                                 <ExternalLink size={20} />
                                 Open UPI App
                             </button>
-                            <button onClick={handleVerifyPayment} className="pay-btn secondary">
-                                <CheckCircle size={20} />
-                                I've Paid
+                            <button 
+                                onClick={handleVerifyPayment} 
+                                className="pay-btn secondary"
+                                disabled={verifying}
+                            >
+                                {verifying ? (
+                                    <>
+                                        <div className="mini-spinner"></div>
+                                        Verifying...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle size={20} />
+                                        I've Paid
+                                    </>
+                                )}
                             </button>
                         </div>
 
@@ -152,9 +199,28 @@ export default function UPIPayment({
                         </div>
                         <h2>Processing Payment</h2>
                         <p>Please complete the payment in your UPI app</p>
-                        <button onClick={handleVerifyPayment} className="pay-btn secondary">
-                            <CheckCircle size={20} />
-                            I've Completed Payment
+                        {error && (
+                            <div className="payment-error">
+                                <AlertCircle size={18} />
+                                {error}
+                            </div>
+                        )}
+                        <button 
+                            onClick={handleVerifyPayment} 
+                            className="pay-btn secondary"
+                            disabled={verifying}
+                        >
+                            {verifying ? (
+                                <>
+                                    <div className="mini-spinner"></div>
+                                    Verifying...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={20} />
+                                    I've Completed Payment
+                                </>
+                            )}
                         </button>
                     </div>
                 )}

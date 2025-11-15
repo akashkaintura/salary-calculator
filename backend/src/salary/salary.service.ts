@@ -173,5 +173,43 @@ export class SalaryService {
       take: 100,
     });
   }
+
+  // City Tax Data Management Methods
+  async getAllCityTaxData() {
+    return this.cityTaxRepository.find({
+      order: { city: 'ASC' },
+    });
+  }
+
+  async getCityTaxData(city: string) {
+    return this.cityTaxRepository.findOne({
+      where: { city },
+    });
+  }
+
+  async createCityTaxData(dto: CreateCityTaxDto) {
+    const cityTax = this.cityTaxRepository.create({
+      ...dto,
+      hraExemptionPercent: dto.hraExemptionPercent || 50,
+      defaultTaxRegime: dto.defaultTaxRegime || 'new',
+    });
+    return this.cityTaxRepository.save(cityTax);
+  }
+
+  async updateCityTaxData(city: string, dto: Partial<CreateCityTaxDto>) {
+    const cityTax = await this.cityTaxRepository.findOne({
+      where: { city },
+    });
+    if (!cityTax) {
+      throw new Error(`City tax data for ${city} not found`);
+    }
+    Object.assign(cityTax, dto);
+    return this.cityTaxRepository.save(cityTax);
+  }
+
+  async deleteCityTaxData(city: string) {
+    const result = await this.cityTaxRepository.delete({ city });
+    return { success: result.affected > 0 };
+  }
 }
 

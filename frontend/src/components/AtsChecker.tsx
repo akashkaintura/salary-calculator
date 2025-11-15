@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
-import { FileText, Upload, CheckCircle, XCircle, AlertCircle, Clock, History, TrendingUp, Building2 } from 'lucide-react';
+import { FileText, Upload, CheckCircle, XCircle, AlertCircle, Clock, History, TrendingUp, Building2, Sparkles, Zap } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import './AtsChecker.css';
+
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 const getApiBaseUrl = () => {
     const url = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -22,9 +28,11 @@ interface AtsResult {
     wordCount: number;
     remaining: number;
     resetAt: string;
+    checkId?: string;
     companyComparisons?: {
         goldmanSachs: { score: number; match: string };
         google: { score: number; match: string };
+        allCompanies?: Record<string, { score: number; match: string }>;
     };
     detailedAnalysis?: {
         keywordDensity: number;
@@ -32,6 +40,13 @@ interface AtsResult {
         actionVerbUsage: number;
         quantifiableResults: number;
         technicalSkills: number;
+    };
+    premiumFeatures?: {
+        optimizedKeywords: string[];
+        industrySpecificSuggestions: string[];
+        resumeOptimizationTips: string[];
+        missingKeywords: string[];
+        keywordReplacements: Array<{ current: string; suggested: string; reason: string }>;
     };
 }
 
@@ -56,6 +71,9 @@ export default function AtsChecker() {
     const [usage, setUsage] = useState<{ remaining: number; resetAt: string } | null>(null);
     const [history, setHistory] = useState<AtsHistoryItem[]>([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [resumeText, setResumeText] = useState<string>('');
+    const [loadingPremium, setLoadingPremium] = useState(false);
+    const [currentCheckId, setCurrentCheckId] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];

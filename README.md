@@ -1,18 +1,33 @@
-# 💰 Indian Salary Calculator
+# 💰 Salary Calculator & Resume ATS Checker
 
-A modern, Gen Z-friendly web application to calculate your in-hand salary according to Indian tax laws. Built with React/Vite frontend and NestJS backend.
+A modern, Gen Z-friendly web application for calculating in-hand salary according to Indian tax laws and checking resume compatibility with Applicant Tracking Systems (ATS). Built with React/Vite frontend and NestJS backend.
 
 ## ✨ Features
 
+### 💵 Salary Calculator
 - 🧮 Calculate in-hand salary based on CTC and city
 - 📍 Support for major Indian cities with accurate tax calculations
-- 💼 Track GitHub and LinkedIn profiles
 - 📊 Detailed salary breakdown (Basic, HRA, EPF, ESI, Professional Tax, Income Tax)
-- 🎨 Modern, beautiful UI with smooth animations
-- 💾 Save calculation history in PostgreSQL database
-- 🔐 GitHub OAuth & Email/Password authentication
 - 📈 Variable pay and insurance support
-- 📜 User-specific calculation history
+- 💾 Save calculation history in database
+- 📜 User-specific calculation history with easy access
+
+### 📄 Resume ATS Checker
+- 🔍 Analyze resume compatibility with ATS systems
+- 📝 Support for PDF and DOCX file formats (up to 2MB)
+- 🎯 ATS score calculation (0-100)
+- ✅ Keyword matching analysis
+- 💪 Strengths identification
+- ⚠️ Areas for improvement detection
+- 💡 Actionable suggestions for optimization
+- ⏱️ Rate limiting: 3 checks per user, resets every 12 hours
+
+### 🔐 Authentication & User Management
+- 🔑 GitHub OAuth integration
+- 📧 Email/Password authentication
+- 👤 User profile management
+- 🔒 Secure JWT-based authentication
+- 💾 User-specific data storage
 
 ## 🛠️ Tech Stack
 
@@ -26,11 +41,14 @@ A modern, Gen Z-friendly web application to calculate your in-hand salary accord
 ### Backend
 - NestJS
 - TypeScript
-- PostgreSQL (Neon)
+- PostgreSQL
 - TypeORM
 - JWT Authentication
 - Passport.js (GitHub OAuth)
 - bcryptjs (Password hashing)
+- Multer (File uploads)
+- pdf-parse (PDF parsing)
+- mammoth (DOCX parsing)
 
 ## 🚀 Getting Started
 
@@ -39,7 +57,7 @@ A modern, Gen Z-friendly web application to calculate your in-hand salary accord
 - Node.js (v20.13.1 or higher)
 - PostgreSQL (v12 or higher) or Neon account
 - npm or pnpm
-- GitHub account (for OAuth)
+- GitHub account (for OAuth, optional)
 
 ### Installation
 
@@ -58,11 +76,11 @@ npm install
 # Create a .env file
 cp .env.example .env
 
-# Edit .env with your database credentials
+# Edit .env with your configuration
 # See Environment Variables section below
 ```
 
-3. **Set up Database (Neon or Local PostgreSQL)**
+3. **Set up Database**
 
 **Option A: Using Neon (Recommended)**
 - Go to [neon.tech](https://neon.tech) and create a project
@@ -112,7 +130,7 @@ The frontend will run on `http://localhost:5173`
 ### Backend (.env)
 
 ```env
-# Database Configuration - Neon PostgreSQL (Recommended)
+# Database Configuration
 DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require&channel_binding=require
 
 # OR Use individual parameters (for local development)
@@ -153,8 +171,8 @@ VITE_API_URL=http://localhost:3000
    - Click "New OAuth App"
    - Fill in:
      - **Application name**: `Salary Calculator`
-     - **Homepage URL**: `http://localhost:5173` (or your Vercel URL)
-     - **Authorization callback URL**: `http://localhost:3000/api/auth/github/callback` (or your backend URL)
+     - **Homepage URL**: Your frontend URL
+     - **Authorization callback URL**: Your backend URL + `/api/auth/github/callback`
    - Click "Register application"
 
 2. **Get Credentials**
@@ -167,62 +185,6 @@ VITE_API_URL=http://localhost:3000
 - Users can register with email and password
 - No additional setup required
 - Passwords are securely hashed with bcrypt
-
-## 🌐 Deployment
-
-### Frontend Deployment (Vercel)
-
-1. **Go to [vercel.com](https://vercel.com)** and sign in with GitHub
-2. **Create New Project**
-   - Click "Add New..." → "Project"
-   - Import repository: `akashkaintura/salary-calculator`
-   - Configure:
-     - **Root Directory**: `frontend`
-     - **Framework Preset**: Vite (auto-detected)
-     - **Build Command**: `npm run build` (auto-detected)
-     - **Output Directory**: `dist` (auto-detected)
-3. **Add Environment Variable**
-   - `VITE_API_URL`: Your backend URL (e.g., `https://your-backend.onrender.com`)
-4. **Deploy**
-   - Click "Deploy"
-   - Get your Vercel URL
-
-### Backend Deployment (Render)
-
-1. **Go to [render.com](https://render.com)** and sign in with GitHub
-2. **Create New Web Service**
-   - Click "New" → "Web Service"
-   - Connect repository: `akashkaintura/salary-calculator`
-   - Configure:
-     - **Name**: `salary-calculator-backend`
-     - **Root Directory**: `backend`
-     - **Environment**: `Node`
-     - **Build Command**: `npm install && npm run build`
-     - **Start Command**: `npm run start:prod`
-3. **Add Environment Variables**
-   ```
-   DATABASE_URL=your_neon_database_url
-   NODE_ENV=production
-   PORT=3000
-   FRONTEND_URL=your_vercel_frontend_url
-   GITHUB_CLIENT_ID=your_github_client_id
-   GITHUB_CLIENT_SECRET=your_github_client_secret
-   GITHUB_CALLBACK_URL=your_render_backend_url/api/auth/github/callback
-   JWT_SECRET=your_jwt_secret
-   ```
-4. **Deploy**
-   - Click "Create Web Service"
-   - Wait for deployment
-   - Get your Render URL
-
-### Update GitHub OAuth After Deployment
-
-1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
-2. Edit your OAuth App
-3. Update:
-   - **Homepage URL**: Your Vercel frontend URL
-   - **Authorization callback URL**: Your Render backend URL + `/api/auth/github/callback`
-4. Save changes
 
 ## 🧮 Salary Calculation Logic
 
@@ -243,6 +205,22 @@ The calculator uses the following structure:
 - **Insurance**: Health/Life insurance premiums (part of CTC, not monthly salary)
 - Monthly salary is calculated from **Fixed CTC** only
 
+## 📊 Resume ATS Checker Logic
+
+The ATS checker analyzes resumes based on:
+
+- **Keyword Matching**: Checks for 50+ common ATS keywords
+- **Resume Length**: Optimal length analysis (300-1000 words)
+- **Section Detection**: Verifies presence of contact, experience, education, and skills sections
+- **Action Verbs**: Identifies use of action verbs
+- **Score Calculation**: Combines keyword density (60%) and length optimization (40%)
+
+### Rate Limiting
+
+- **3 checks per user** per 12-hour window
+- Automatic reset after 12 hours from first check
+- Usage tracking in database
+
 ## 🎯 API Endpoints
 
 ### Authentication
@@ -257,6 +235,10 @@ The calculator uses the following structure:
 - `POST /api/salary/calculate` - Calculate salary breakdown (requires auth)
 - `GET /api/salary/history` - Get user's calculation history (requires auth)
 
+### Resume ATS Checker
+- `POST /api/ats/check` - Upload and analyze resume (requires auth, file upload)
+- `POST /api/ats/usage` - Get remaining checks and reset time (requires auth)
+
 ## 📁 Project Structure
 
 ```
@@ -267,7 +249,8 @@ salary-calculator/
 │   │   ├── App.css              # Styles
 │   │   ├── main.tsx             # Entry point
 │   │   ├── components/
-│   │   │   └── Login.tsx        # Login/Signup component
+│   │   │   ├── Login.tsx        # Login/Signup component
+│   │   │   └── AtsChecker.tsx   # ATS Checker component
 │   │   └── contexts/
 │   │       └── AuthContext.tsx  # Authentication context
 │   ├── package.json
@@ -284,41 +267,41 @@ salary-calculator/
 │   │   ├── user/                # User module
 │   │   │   └── entities/
 │   │   │       └── user.entity.ts
-│   │   └── salary/              # Salary calculation module
-│   │       ├── salary.controller.ts
-│   │       ├── salary.service.ts
-│   │       ├── dto/
+│   │   ├── salary/              # Salary calculation module
+│   │   │   ├── salary.controller.ts
+│   │   │   ├── salary.service.ts
+│   │   │   ├── dto/
+│   │   │   └── entities/
+│   │   └── ats/                 # ATS checker module
+│   │       ├── ats.controller.ts
+│   │       ├── ats.service.ts
 │   │       └── entities/
+│   │           └── ats-usage.entity.ts
 │   ├── package.json
 │   └── tsconfig.json
 └── README.md
-```
-
-## 🔄 Continuous Deployment
-
-Both Vercel and Render automatically deploy when you push to the `main` branch:
-
-```bash
-git add .
-git commit -m "Your changes"
-git push origin main
 ```
 
 ## 🐛 Troubleshooting
 
 ### Backend not connecting to database
 - Verify `DATABASE_URL` is correct
-- Check that Neon database is active (not paused)
-- Ensure SSL is enabled (Neon requires SSL)
+- Check that database is active (not paused)
+- Ensure SSL is enabled if using cloud database
 
 ### CORS errors
-- Ensure `FRONTEND_URL` in backend matches your Vercel URL exactly
+- Ensure `FRONTEND_URL` in backend matches your frontend URL exactly
 - Check that frontend is using the correct `VITE_API_URL`
 
 ### Authentication not working
 - Verify GitHub OAuth credentials are correct
 - Check that callback URL matches exactly
 - Ensure JWT_SECRET is set
+
+### File upload issues
+- Verify file is PDF or DOCX format
+- Check file size is under 2MB
+- Ensure user has remaining checks available
 
 ### Build failures
 - Check Node.js version (should be 20+)

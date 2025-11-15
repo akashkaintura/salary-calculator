@@ -58,7 +58,7 @@ interface AtsHistoryItem {
 }
 
 export default function AtsChecker() {
-    const { token, user, logout } = useAuth();
+    const { token, logout } = useAuth();
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -103,7 +103,7 @@ export default function AtsChecker() {
 
     const checkUsage = async () => {
         if (!token) return;
-        
+
         try {
             const response = await axios.post(
                 `${API_BASE_URL}/api/ats/usage`,
@@ -183,7 +183,7 @@ export default function AtsChecker() {
 
     const loadHistory = async () => {
         if (!token) return;
-        
+
         try {
             const response = await axios.get<AtsHistoryItem[]>(
                 `${API_BASE_URL}/api/ats/history`,

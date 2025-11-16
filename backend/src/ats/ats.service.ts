@@ -6,29 +6,24 @@ import { AtsUsage } from './entities/ats-usage.entity';
 import { AtsCheck } from './entities/ats-check.entity';
 
 // Import pdf-parse with proper type handling
-// Use dynamic require to handle CommonJS module
-const pdfParse = (() => {
-  try {
-    const pdfParseLib = require('pdf-parse');
-    // Handle both default export and named export
-    if (typeof pdfParseLib === 'function') {
-      return pdfParseLib;
-    }
-    if (pdfParseLib.default && typeof pdfParseLib.default === 'function') {
-      return pdfParseLib.default;
-    }
-    // If it's an object with a function property
-    if (pdfParseLib.pdfParse && typeof pdfParseLib.pdfParse === 'function') {
-      return pdfParseLib.pdfParse;
-    }
-    throw new Error('pdf-parse module not found or invalid');
-  } catch (error) {
-    console.error('Failed to load pdf-parse:', error);
-    return async (buffer: Buffer) => {
-      throw new BadRequestException('PDF parsing is not available. Please ensure pdf-parse is installed.');
-    };
+// pdf-parse is a CommonJS module that exports a function directly
+let pdfParse: (buffer: Buffer) => Promise<{ text: string }>;
+try {
+  const pdfParseLib = require('pdf-parse');
+  // pdf-parse exports the function directly (not as default)
+  if (typeof pdfParseLib === 'function') {
+    pdfParse = pdfParseLib;
+  } else if (pdfParseLib && typeof pdfParseLib.default === 'function') {
+    pdfParse = pdfParseLib.default;
+  } else {
+    throw new Error('pdf-parse module format is unexpected');
   }
-})();
+} catch (error) {
+  console.error('Failed to load pdf-parse:', error);
+  pdfParse = async (buffer: Buffer) => {
+    throw new BadRequestException('PDF parsing is not available. Please ensure pdf-parse is installed.');
+  };
+}
 
 export interface AtsCheckResult {
   score: number;
@@ -223,15 +218,21 @@ export class AtsService {
         file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         file.mimetype === 'application/msword'
       ) {
-        const result = await mammoth.extractRawText({ buffer: file.buffer });
-        text = result.value || '';
+        try {
+          const result = await mammoth.extractRawText({ buffer: file.buffer });
+          text = result?.value || '';
+        } catch (docxError) {
+          console.error('DOCX parsing error details:', docxError);
+          const errorMessage = docxError instanceof Error ? docxError.message : 'Unknown error';
+          throw new BadRequestException(`Failed to parse DOCX file: ${errorMessage}. Please ensure the file is not corrupted.`);
+        }
       }
 
       if (!text || text.trim().length === 0) {
-        throw new BadRequestException('Could not extract text from file. The file may be empty or corrupted.');
+        throw new BadRequestException('Could not extract text from file. The file may be empty, corrupted, or password-protected.');
       }
 
-      return text;
+      return text.trim();
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;

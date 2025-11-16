@@ -49,6 +49,12 @@ export class AtsController {
         @CurrentUser() user: User,
     ): Promise<AtsCheckResult & { remaining: number; resetAt: Date; checkId: string }> {
         try {
+            // Log for debugging (remove in production if needed)
+            if (!user) {
+                console.error('No user found in request - authentication failed');
+                throw new BadRequestException('Authentication failed. Please log in again.');
+            }
+
             if (!file) {
                 throw new BadRequestException('No file uploaded');
             }

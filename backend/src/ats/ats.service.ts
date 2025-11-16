@@ -64,13 +64,16 @@ const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
     const data = await pdfParser(buffer);
     
     // pdf-parse returns an object with a 'text' property
+    let text = '';
     if (typeof data === 'string') {
-      return data.trim();
+      text = data;
     } else if (data && typeof data === 'object' && 'text' in data) {
-      return (data.text || '').trim();
+      text = data.text || '';
     } else {
-      return String(data || '').trim();
+      text = String(data || '');
     }
+    
+    return text.trim();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new BadRequestException(`Failed to parse PDF: ${errorMessage}. Please ensure the file is not password-protected or corrupted.`);

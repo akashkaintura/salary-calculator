@@ -8,6 +8,7 @@ import { AtsCheck } from './entities/ats-check.entity';
 // Import pdf-parse with proper type handling
 // pdf-parse is a CommonJS module that exports a function directly
 let pdfParse: (buffer: Buffer) => Promise<{ text: string }> | null = null;
+let pdfParseLoadError: Error | null = null;
 
 // Lazy load pdf-parse to handle both development and production environments
 const loadPdfParse = async (): Promise<(buffer: Buffer) => Promise<{ text: string }>> => {
@@ -15,23 +16,79 @@ const loadPdfParse = async (): Promise<(buffer: Buffer) => Promise<{ text: strin
     return pdfParse;
   }
 
+  // If we've already tried and failed, throw the cached error
+  if (pdfParseLoadError) {
+    throw pdfParseLoadError;
+  }
+
   try {
-    // Try CommonJS require first
-    const pdfParseLib = require('pdf-parse');
+    // Try multiple methods to load pdf-parse
+    let pdfParseLib: any;
     
+    // Method 1: Try CommonJS require
+    try {
+      pdfParseLib = require('pdf-parse');
+      console.log('pdf-parse loaded via require, type:', typeof pdfParseLib);
+    } catch (requireError) {
+      console.error('require("pdf-parse") failed:', requireError);
+      
+      // Method 2: Try dynamic import (ES modules)
+      try {
+        const pdfParseModule = await import('pdf-parse');
+        pdfParseLib = pdfParseModule.default || pdfParseModule;
+        console.log('pdf-parse loaded via import, type:', typeof pdfParseLib);
+      } catch (importError) {
+        console.error('import("pdf-parse") failed:', importError);
+        throw new Error(`Failed to load pdf-parse: require error: ${requireError}, import error: ${importError}`);
+      }
+    }
+    
+    // Validate and assign the function
     if (typeof pdfParseLib === 'function') {
       pdfParse = pdfParseLib;
+      console.log('pdf-parse function assigned successfully');
       return pdfParse;
     } else if (pdfParseLib && typeof pdfParseLib.default === 'function') {
       pdfParse = pdfParseLib.default;
+      console.log('pdf-parse default function assigned successfully');
       return pdfParse;
     } else {
-      throw new Error('pdf-parse module format is unexpected');
+      const error = new Error(`pdf-parse module format is unexpected. Got type: ${typeof pdfParseLib}, keys: ${Object.keys(pdfParseLib || {}).join(', ')}`);
+      pdfParseLoadError = error;
+      throw error;
     }
   } catch (error) {
-    console.error('Failed to load pdf-parse:', error);
-    console.error('Error details:', error instanceof Error ? error.stack : error);
-    throw new BadRequestException('PDF parsing is not available. Please ensure pdf-parse is installed in the backend.');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error('Failed to load pdf-parse:', errorMessage);
+    if (errorStack) {
+      console.error('Error stack:', errorStack);
+    }
+    
+    // Check if pdf-parse is in node_modules
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const pdfParsePath = path.join(process.cwd(), 'node_modules', 'pdf-parse');
+      const exists = fs.existsSync(pdfParsePath);
+      console.log(`pdf-parse exists in node_modules: ${exists}`);
+      if (exists) {
+        const packageJsonPath = path.join(pdfParsePath, 'package.json');
+        if (fs.existsSync(packageJsonPath)) {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          console.log('pdf-parse package.json:', JSON.stringify(packageJson, null, 2));
+        }
+      }
+    } catch (checkError) {
+      console.error('Error checking pdf-parse installation:', checkError);
+    }
+    
+    const finalError = new BadRequestException(
+      `PDF parsing is not available. Please ensure pdf-parse is installed in the backend. Error: ${errorMessage}`
+    );
+    pdfParseLoadError = finalError;
+    throw finalError;
   }
 };
 

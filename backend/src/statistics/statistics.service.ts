@@ -3,8 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../user/entities/user.entity';
 import { SalaryCalculation } from '../salary/entities/salary-calculation.entity';
-import { AtsCheck } from '../ats/entities/ats-check.entity';
-import { Payment, PaymentStatus } from '../payment/entities/payment.entity';
 
 export interface Statistics {
   users: {
@@ -33,21 +31,6 @@ export interface Statistics {
     calculationsThisMonth: number;
     calculationsThisWeek: number;
   };
-  ats: {
-    totalChecks: number;
-    averageScore: number;
-    checksThisMonth: number;
-    checksThisWeek: number;
-    premiumUpgrades: number;
-  };
-  payments: {
-    totalRevenue: number;
-    totalTransactions: number;
-    successfulPayments: number;
-    pendingPayments: number;
-    revenueThisMonth: number;
-    revenueThisWeek: number;
-  };
 }
 
 @Injectable()
@@ -57,10 +40,6 @@ export class StatisticsService {
     private userRepository: Repository<User>,
     @InjectRepository(SalaryCalculation)
     private salaryRepository: Repository<SalaryCalculation>,
-    @InjectRepository(AtsCheck)
-    private atsCheckRepository: Repository<AtsCheck>,
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
   ) {}
 
   async getStatistics(): Promise<Statistics> {
@@ -120,50 +99,6 @@ export class StatisticsService {
     // Top Cities
     const cityCounts = this.countByCity(allCalculations);
 
-    // ATS Statistics
-    const totalAtsChecks = await this.atsCheckRepository.count();
-    const allAtsChecks = await this.atsCheckRepository.find({
-      select: ['score', 'createdAt'],
-    });
-    const scores = allAtsChecks.map(c => c.score).filter(s => s > 0);
-    const averageScore = scores.length > 0
-      ? scores.reduce((a, b) => a + b, 0) / scores.length
-      : 0;
-    const checksThisMonth = allAtsChecks.filter(
-      c => new Date(c.createdAt) >= startOfMonth
-    ).length;
-    const checksThisWeek = allAtsChecks.filter(
-      c => new Date(c.createdAt) >= startOfWeek
-    ).length;
-
-    // Payment Statistics
-    const allPayments = await this.paymentRepository.find({
-      select: ['amount', 'status', 'createdAt'],
-    });
-    const successfulPayments = allPayments.filter(p => p.status === PaymentStatus.COMPLETED);
-    const totalRevenue = successfulPayments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0
-    );
-    const pendingPayments = allPayments.filter(p => p.status === PaymentStatus.PENDING).length;
-    const premiumUpgrades = successfulPayments.length;
-
-    // Payment revenue trends
-    const paymentsThisMonth = allPayments.filter(
-      p => new Date(p.createdAt) >= startOfMonth && p.status === PaymentStatus.COMPLETED
-    );
-    const revenueThisMonth = paymentsThisMonth.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0
-    );
-    const paymentsThisWeek = allPayments.filter(
-      p => new Date(p.createdAt) >= startOfWeek && p.status === PaymentStatus.COMPLETED
-    );
-    const revenueThisWeek = paymentsThisWeek.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0
-    );
-
     return {
       users: {
         total: totalUsers,
@@ -184,21 +119,6 @@ export class StatisticsService {
         topCities: cityCounts.slice(0, 10),
         calculationsThisMonth,
         calculationsThisWeek,
-      },
-      ats: {
-        totalChecks: totalAtsChecks,
-        averageScore: Number(averageScore.toFixed(2)),
-        checksThisMonth,
-        checksThisWeek,
-        premiumUpgrades,
-      },
-      payments: {
-        totalRevenue: Number(totalRevenue.toFixed(2)),
-        totalTransactions: allPayments.length,
-        successfulPayments: successfulPayments.length,
-        pendingPayments,
-        revenueThisMonth: Number(revenueThisMonth.toFixed(2)),
-        revenueThisWeek: Number(revenueThisWeek.toFixed(2)),
       },
     };
   }

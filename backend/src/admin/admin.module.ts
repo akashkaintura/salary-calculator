@@ -4,12 +4,10 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { User } from '../user/entities/user.entity';
 import { SalaryCalculation } from '../salary/entities/salary-calculation.entity';
-import { AtsCheck } from '../ats/entities/ats-check.entity';
-import { Payment } from '../payment/entities/payment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, SalaryCalculation, AtsCheck, Payment]),
+    TypeOrmModule.forFeature([User, SalaryCalculation]),
   ],
   controllers: [AdminController],
   providers: [AdminService],

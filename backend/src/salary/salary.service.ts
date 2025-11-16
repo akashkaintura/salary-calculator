@@ -11,6 +11,7 @@ export interface SalaryBreakdown {
   fixedCtc: number;
   variablePay: number;
   insurance: number;
+  relocationAllowance?: number;
   basicSalary: number;
   hra: number;
   specialAllowance: number;
@@ -21,6 +22,8 @@ export interface SalaryBreakdown {
   inHandSalary: number;
   monthlyDeductions: number;
   annualDeductions: number;
+  company?: string;
+  isRelocation?: boolean;
 }
 
 @Injectable()
@@ -38,6 +41,9 @@ export class SalaryService {
       dto.city,
       dto.variablePay || 0,
       dto.insurance || 0,
+      dto.company,
+      dto.isRelocation || false,
+      dto.relocationAllowance || 0,
     );
 
     // Save to database
@@ -56,10 +62,14 @@ export class SalaryService {
     city: string,
     variablePay: number = 0,
     insurance: number = 0,
+    company?: string,
+    isRelocation: boolean = false,
+    relocationAllowance: number = 0,
   ): Promise<SalaryBreakdown> {
-    // Fixed CTC = Total CTC - Variable Pay - Insurance
-    // Variable pay and insurance are part of CTC but not part of monthly salary
-    const fixedCtc = ctc - variablePay - insurance;
+    // Fixed CTC = Total CTC - Variable Pay - Insurance - Relocation Allowance
+    // Variable pay, insurance, and relocation allowance are part of CTC but not part of monthly salary
+    // Relocation allowance is typically a one-time payment, not included in monthly calculations
+    const fixedCtc = ctc - variablePay - insurance - relocationAllowance;
 
     // Standard salary structure: 50% Basic, 40% HRA, 10% Special Allowance
     // Based on fixed CTC only (excluding variable pay and insurance)
@@ -125,11 +135,17 @@ export class SalaryService {
     const inHandSalary = grossMonthly - monthlyDeductions;
     const annualDeductions = monthlyDeductions * 12;
 
+    // Company-specific adjustments (if needed)
+    // Some companies may have different salary structures or benefits
+    // This can be extended based on company-specific rules
+    const companyAdjustments = this.getCompanySpecificAdjustments(company, city);
+
     return {
       ctc,
       fixedCtc: Number(fixedCtc.toFixed(2)),
       variablePay: Number(variablePay.toFixed(2)),
       insurance: Number(insurance.toFixed(2)),
+      relocationAllowance: relocationAllowance > 0 ? Number(relocationAllowance.toFixed(2)) : undefined,
       basicSalary: Number(basicSalary.toFixed(2)),
       hra: Number(hra.toFixed(2)),
       specialAllowance: Number(specialAllowance.toFixed(2)),
@@ -140,7 +156,44 @@ export class SalaryService {
       inHandSalary: Number(inHandSalary.toFixed(2)),
       monthlyDeductions: Number(monthlyDeductions.toFixed(2)),
       annualDeductions: Number(annualDeductions.toFixed(2)),
+      company: company || undefined,
+      isRelocation: isRelocation || undefined,
     };
+  }
+
+  private getCompanySpecificAdjustments(company?: string, city?: string): {
+    hraMultiplier?: number;
+    specialAllowanceMultiplier?: number;
+    additionalBenefits?: number;
+  } {
+    // Company-specific salary structure adjustments
+    // This can be extended with actual company data
+    if (!company) {
+      return {};
+    }
+
+    const companyLower = company.toLowerCase();
+    
+    // Example: Some companies offer higher HRA in metro cities
+    const metroCities = ['Mumbai', 'Delhi', 'Kolkata', 'Chennai', 'Bangalore', 'Hyderabad', 'Pune'];
+    const isMetro = city && metroCities.includes(city);
+
+    // Tech companies often have different structures
+    if (companyLower.includes('google') || companyLower.includes('microsoft') || companyLower.includes('amazon')) {
+      return {
+        // Tech companies may offer higher special allowances
+        specialAllowanceMultiplier: 1.1,
+      };
+    }
+
+    // Finance companies may have different structures
+    if (companyLower.includes('goldman') || companyLower.includes('morgan') || companyLower.includes('jpmorgan')) {
+      return {
+        hraMultiplier: isMetro ? 1.15 : 1.0,
+      };
+    }
+
+    return {};
   }
 
   private async getProfessionalTax(city: string, grossMonthly: number): Promise<number> {

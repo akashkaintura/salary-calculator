@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Calculator, MapPin, DollarSign, TrendingUp, Shield, LogOut, History, FileText, BarChart3 } from 'lucide-react'
+import { Calculator, MapPin, DollarSign, TrendingUp, Shield, LogOut, History, Building2, Plane, BarChart3 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
-import AtsChecker from './components/AtsChecker'
 import AdminDashboard from './components/AdminDashboard'
 import './App.css'
 
@@ -17,6 +16,9 @@ const API_BASE_URL = getApiBaseUrl()
 interface SalaryData {
   ctc: string
   city: string
+  company: string
+  isRelocation: boolean
+  relocationAllowance: string
   githubProfile: string
   linkedinProfile: string
   offerInHand: string
@@ -29,6 +31,7 @@ interface SalaryBreakdown {
   fixedCtc: number
   variablePay: number
   insurance: number
+  relocationAllowance?: number
   basicSalary: number
   hra: number
   specialAllowance: number
@@ -39,6 +42,8 @@ interface SalaryBreakdown {
   inHandSalary: number
   monthlyDeductions: number
   annualDeductions: number
+  company?: string
+  isRelocation?: boolean
 }
 
 function App() {
@@ -46,6 +51,9 @@ function App() {
   const [formData, setFormData] = useState<SalaryData>({
     ctc: '',
     city: '',
+    company: '',
+    isRelocation: false,
+    relocationAllowance: '',
     githubProfile: '',
     linkedinProfile: '',
     offerInHand: '',
@@ -57,7 +65,7 @@ function App() {
   const [error, setError] = useState('')
   const [history, setHistory] = useState<any[]>([])
   const [showHistory, setShowHistory] = useState(false)
-  const [activeTab, setActiveTab] = useState<'salary' | 'ats' | 'admin'>('salary')
+  const [activeTab, setActiveTab] = useState<'salary' | 'admin'>('salary')
 
   // Handle auth callback
   useEffect(() => {
@@ -125,18 +133,22 @@ function App() {
 
       const variablePay = formData.variablePay ? parseFloat(formData.variablePay) : 0
       const insurance = formData.insurance ? parseFloat(formData.insurance) : 0
+      const relocationAllowance = formData.isRelocation && formData.relocationAllowance ? parseFloat(formData.relocationAllowance) : 0
 
-      if (variablePay < 0 || insurance < 0) {
-        throw new Error('Variable pay and insurance cannot be negative')
+      if (variablePay < 0 || insurance < 0 || relocationAllowance < 0) {
+        throw new Error('Variable pay, insurance, and relocation allowance cannot be negative')
       }
 
-      if (variablePay + insurance > ctc) {
-        throw new Error('Variable pay + Insurance cannot exceed total CTC')
+      if (variablePay + insurance + relocationAllowance > ctc) {
+        throw new Error('Variable pay + Insurance + Relocation Allowance cannot exceed total CTC')
       }
 
       const response = await axios.post(`${API_BASE_URL}/api/salary/calculate`, {
         ctc,
         city: formData.city,
+        company: formData.company || undefined,
+        isRelocation: formData.isRelocation,
+        relocationAllowance: relocationAllowance > 0 ? relocationAllowance : undefined,
         githubProfile: formData.githubProfile || undefined,
         linkedinProfile: formData.linkedinProfile || undefined,
         offerInHand: formData.offerInHand ? parseFloat(formData.offerInHand) : undefined,
@@ -215,13 +227,6 @@ function App() {
           >
             <Calculator size={20} />
             Salary Calculator
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'ats' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ats')}
-          >
-            <FileText size={20} />
-            ATS Checker
           </button>
           {(user.role === 'admin' || user.isAdmin === true) && (
             <button
@@ -319,6 +324,50 @@ function App() {
                   </div>
 
                   <div className="form-section">
+                    <label htmlFor="company">
+                      <Building2 size={20} />
+                      Company (Optional)
+                    </label>
+                    <input
+                      id="company"
+                      type="text"
+                      placeholder="Enter company name (e.g., Google, Microsoft)"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    />
+                    <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                      Company-specific calculations may apply
+                    </small>
+                  </div>
+
+                  <div className="form-section">
+                    <label htmlFor="isRelocation" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        id="isRelocation"
+                        type="checkbox"
+                        checked={formData.isRelocation}
+                        onChange={(e) => setFormData({ ...formData, isRelocation: e.target.checked, relocationAllowance: e.target.checked ? formData.relocationAllowance : '' })}
+                        style={{ width: 'auto', cursor: 'pointer' }}
+                      />
+                      <Plane size={20} />
+                      <span>Relocation Package</span>
+                    </label>
+                    {formData.isRelocation && (
+                      <input
+                        id="relocationAllowance"
+                        type="number"
+                        placeholder="Enter relocation allowance (e.g., 50000)"
+                        value={formData.relocationAllowance}
+                        onChange={(e) => setFormData({ ...formData, relocationAllowance: e.target.value })}
+                        style={{ marginTop: '0.5rem' }}
+                      />
+                    )}
+                    <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                      One-time relocation allowance (part of CTC, not monthly salary)
+                    </small>
+                  </div>
+
+                  <div className="form-section">
                     <label htmlFor="variablePay">
                       <TrendingUp size={20} />
                       Variable Pay (Annual, Optional)
@@ -390,6 +439,20 @@ function App() {
                         <div className="result-item" style={{ opacity: 0.8 }}>
                           <span className="label">Insurance (Annual)</span>
                           <span className="value">₹{result.insurance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+
+                      {result.relocationAllowance && result.relocationAllowance > 0 && (
+                        <div className="result-item" style={{ opacity: 0.8 }}>
+                          <span className="label">Relocation Allowance (One-time)</span>
+                          <span className="value">₹{result.relocationAllowance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+
+                      {result.company && (
+                        <div className="result-item" style={{ opacity: 0.9 }}>
+                          <span className="label">Company</span>
+                          <span className="value">{result.company}</span>
                         </div>
                       )}
 

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsOptional, IsUrl, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional, IsUrl, Min, IsBoolean } from 'class-validator';
 
 export class CalculateSalaryDto {
   @IsNotEmpty()
@@ -9,6 +9,19 @@ export class CalculateSalaryDto {
   @IsNotEmpty()
   @IsString()
   city: string;
+
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isRelocation?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  relocationAllowance?: number;
 
   @IsOptional()
   @IsUrl()

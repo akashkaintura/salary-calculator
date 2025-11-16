@@ -3,8 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { User, UserRole } from '../user/entities/user.entity';
 import { SalaryCalculation } from '../salary/entities/salary-calculation.entity';
-import { AtsCheck } from '../ats/entities/ats-check.entity';
-import { Payment } from '../payment/entities/payment.entity';
 
 @Injectable()
 export class AdminService {
@@ -13,10 +11,6 @@ export class AdminService {
     private userRepository: Repository<User>,
     @InjectRepository(SalaryCalculation)
     private salaryRepository: Repository<SalaryCalculation>,
-    @InjectRepository(AtsCheck)
-    private atsCheckRepository: Repository<AtsCheck>,
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
   ) {}
 
   async getUsers(page: number = 1, limit: number = 50, search?: string) {
@@ -39,18 +33,12 @@ export class AdminService {
     // Get additional stats for each user
     const usersWithStats = await Promise.all(
       users.map(async (user) => {
-        const [calculationsCount, atsChecksCount, paymentsCount] = await Promise.all([
-          this.salaryRepository.count({ where: { userId: user.id } }),
-          this.atsCheckRepository.count({ where: { userId: user.id } }),
-          this.paymentRepository.count({ where: { userId: user.id } }),
-        ]);
+        const calculationsCount = await this.salaryRepository.count({ where: { userId: user.id } });
 
         return {
           ...user,
           stats: {
             calculationsCount,
-            atsChecksCount,
-            paymentsCount,
           },
         };
       }),
@@ -73,29 +61,15 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
-    const [calculations, atsChecks, payments] = await Promise.all([
-      this.salaryRepository.find({
-        where: { userId: id },
-        order: { createdAt: 'DESC' },
-        take: 10,
-      }),
-      this.atsCheckRepository.find({
-        where: { userId: id },
-        order: { createdAt: 'DESC' },
-        take: 10,
-      }),
-      this.paymentRepository.find({
-        where: { userId: id },
-        order: { createdAt: 'DESC' },
-        take: 10,
-      }),
-    ]);
+    const calculations = await this.salaryRepository.find({
+      where: { userId: id },
+      order: { createdAt: 'DESC' },
+      take: 10,
+    });
 
     return {
       ...user,
       recentCalculations: calculations,
-      recentAtsChecks: atsChecks,
-      recentPayments: payments,
     };
   }
 

@@ -223,7 +223,7 @@ function App() {
             <FileText size={20} />
             ATS Checker
           </button>
-          {user.role === 'admin' && (
+          {(user.role === 'admin' || user.isAdmin) && (
             <button
               className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
               onClick={() => setActiveTab('admin')}

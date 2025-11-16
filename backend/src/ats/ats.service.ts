@@ -7,11 +7,12 @@ import { AtsCheck } from './entities/ats-check.entity';
 
 // Import pdfjs-dist for PDF parsing
 // pdfjs-dist is Mozilla's PDF.js library, more reliable than pdf-parse
+// pdfjs-dist is an ES module, so we must use dynamic import() only
 let pdfjsLib: any = null;
 let pdfjsLoadError: Error | null = null;
 
 // Lazy load pdfjs-dist to handle both development and production environments
-// pdfjs-dist is an ES module, so we must use dynamic import
+// pdfjs-dist is an ES module, so we must use dynamic import() only (no require)
 const loadPdfJs = async () => {
   if (pdfjsLib) {
     return pdfjsLib;
@@ -23,20 +24,40 @@ const loadPdfJs = async () => {
   }
 
   try {
-    // pdfjs-dist is an ES module, so we must use dynamic import
-    const pdfjsModule = await import('pdfjs-dist');
-    pdfjsLib = pdfjsModule.default || pdfjsModule;
+    // pdfjs-dist is an ES module - MUST use dynamic import(), not require()
+    // Use string literal to ensure it's truly dynamic and not compiled to require()
+    const pdfjsModulePath = 'pdfjs-dist/build/pdf.mjs';
+    const pdfjsModule = await import(/* @vite-ignore */ pdfjsModulePath);
+    
+    // pdfjs-dist exports the API directly (not as default)
+    // The module exports getDocument and other functions directly
+    pdfjsLib = pdfjsModule;
     
     // Verify getDocument is available
     if (!pdfjsLib || typeof pdfjsLib.getDocument !== 'function') {
-      throw new Error('pdfjs-dist loaded but getDocument function is not available');
+      // Try default export if direct doesn't work
+      if (pdfjsModule.default && typeof pdfjsModule.default.getDocument === 'function') {
+        pdfjsLib = pdfjsModule.default;
+      } else {
+        throw new Error('pdfjs-dist loaded but getDocument function is not available. Module keys: ' + Object.keys(pdfjsLib || {}).slice(0, 10).join(', '));
+      }
     }
     
-    console.log('pdfjs-dist loaded successfully');
+    // Configure worker for Node.js environment (optional, but recommended)
+    if (pdfjsLib.GlobalWorkerOptions) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    }
+    
+    console.log('pdfjs-dist loaded successfully via dynamic import');
     return pdfjsLib;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     console.error('Failed to load pdfjs-dist:', errorMessage);
+    if (errorStack) {
+      console.error('Error stack:', errorStack);
+    }
     
     const finalError = new BadRequestException(
       `PDF parsing is not available. Please ensure pdfjs-dist is installed in the backend. Error: ${errorMessage}`

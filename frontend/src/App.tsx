@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calculator, MapPin, DollarSign, TrendingUp, Shield, LogOut, History, Building2, Plane, BarChart3 } from 'lucide-react'
+import { Calculator, MapPin, DollarSign, TrendingUp, Shield, LogOut, History, Building2, Plane, BarChart3, X } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
@@ -66,6 +66,7 @@ function App() {
   const [history, setHistory] = useState<any[]>([])
   const [showHistory, setShowHistory] = useState(false)
   const [activeTab, setActiveTab] = useState<'salary' | 'admin'>('salary')
+  const [showResultModal, setShowResultModal] = useState(false)
 
   // Handle auth callback
   useEffect(() => {
@@ -157,6 +158,7 @@ function App() {
       })
 
       setResult(response.data)
+      setShowResultModal(true)
       loadHistory() // Refresh history
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -288,7 +290,7 @@ function App() {
                 </div>
               )}
 
-              <div className="content-wrapper">
+              <div className="content-wrapper centered">
                 <form onSubmit={handleSubmit} className="form-card">
                   <div className="form-section">
                     <label htmlFor="ctc">
@@ -407,11 +409,18 @@ function App() {
                     {loading ? 'Calculating...' : 'Calculate Salary'}
                   </button>
                 </form>
+              </div>
 
-                {result && (
-                  <div className="result-card">
-                    <h2>Salary Breakdown</h2>
-
+              {/* Result Modal */}
+              {showResultModal && result && (
+                <div className="modal-overlay" onClick={() => setShowResultModal(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h2>Salary Breakdown</h2>
+                      <button className="modal-close-btn" onClick={() => setShowResultModal(false)}>
+                        <X size={24} />
+                      </button>
+                    </div>
                     <div className="result-grid">
                       <div className="result-item highlight">
                         <span className="label">In-Hand Salary (Monthly)</span>

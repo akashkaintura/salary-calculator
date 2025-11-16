@@ -5,90 +5,82 @@ import * as mammoth from 'mammoth';
 import { AtsUsage } from './entities/ats-usage.entity';
 import { AtsCheck } from './entities/ats-check.entity';
 
-// Import pdf-parse with proper type handling
-// pdf-parse is a CommonJS module that exports a function directly
-let pdfParse: (buffer: Buffer) => Promise<{ text: string }> | null = null;
-let pdfParseLoadError: Error | null = null;
+// Import pdfjs-dist for PDF parsing
+// pdfjs-dist is Mozilla's PDF.js library, more reliable than pdf-parse
+let pdfjsLib: any = null;
+let pdfjsLoadError: Error | null = null;
 
-// Lazy load pdf-parse to handle both development and production environments
-const loadPdfParse = async (): Promise<(buffer: Buffer) => Promise<{ text: string }>> => {
-  if (pdfParse) {
-    return pdfParse;
+// Lazy load pdfjs-dist to handle both development and production environments
+const loadPdfJs = async () => {
+  if (pdfjsLib) {
+    return pdfjsLib;
   }
 
   // If we've already tried and failed, throw the cached error
-  if (pdfParseLoadError) {
-    throw pdfParseLoadError;
+  if (pdfjsLoadError) {
+    throw pdfjsLoadError;
   }
 
   try {
-    // Try multiple methods to load pdf-parse
-    let pdfParseLib: any;
-    
-    // Method 1: Try CommonJS require
+    // Try to load pdfjs-dist
     try {
-      pdfParseLib = require('pdf-parse');
-      console.log('pdf-parse loaded via require, type:', typeof pdfParseLib);
+      pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+      console.log('pdfjs-dist loaded successfully');
     } catch (requireError) {
-      console.error('require("pdf-parse") failed:', requireError);
+      console.error('require("pdfjs-dist") failed:', requireError);
       
-      // Method 2: Try dynamic import (ES modules)
+      // Try alternative import path
       try {
-        const pdfParseModule = await import('pdf-parse');
-        pdfParseLib = pdfParseModule.default || pdfParseModule;
-        console.log('pdf-parse loaded via import, type:', typeof pdfParseLib);
+        pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib = pdfjsLib.default || pdfjsLib;
+        console.log('pdfjs-dist loaded via import');
       } catch (importError) {
-        console.error('import("pdf-parse") failed:', importError);
-        throw new Error(`Failed to load pdf-parse: require error: ${requireError}, import error: ${importError}`);
+        console.error('import("pdfjs-dist") failed:', importError);
+        throw new Error(`Failed to load pdfjs-dist: require error: ${requireError}, import error: ${importError}`);
       }
     }
     
-    // Validate and assign the function
-    if (typeof pdfParseLib === 'function') {
-      pdfParse = pdfParseLib;
-      console.log('pdf-parse function assigned successfully');
-      return pdfParse;
-    } else if (pdfParseLib && typeof pdfParseLib.default === 'function') {
-      pdfParse = pdfParseLib.default;
-      console.log('pdf-parse default function assigned successfully');
-      return pdfParse;
-    } else {
-      const error = new Error(`pdf-parse module format is unexpected. Got type: ${typeof pdfParseLib}, keys: ${Object.keys(pdfParseLib || {}).join(', ')}`);
-      pdfParseLoadError = error;
-      throw error;
-    }
+    return pdfjsLib;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    console.error('Failed to load pdf-parse:', errorMessage);
-    if (errorStack) {
-      console.error('Error stack:', errorStack);
-    }
-    
-    // Check if pdf-parse is in node_modules
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      const pdfParsePath = path.join(process.cwd(), 'node_modules', 'pdf-parse');
-      const exists = fs.existsSync(pdfParsePath);
-      console.log(`pdf-parse exists in node_modules: ${exists}`);
-      if (exists) {
-        const packageJsonPath = path.join(pdfParsePath, 'package.json');
-        if (fs.existsSync(packageJsonPath)) {
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-          console.log('pdf-parse package.json:', JSON.stringify(packageJson, null, 2));
-        }
-      }
-    } catch (checkError) {
-      console.error('Error checking pdf-parse installation:', checkError);
-    }
+    console.error('Failed to load pdfjs-dist:', errorMessage);
     
     const finalError = new BadRequestException(
-      `PDF parsing is not available. Please ensure pdf-parse is installed in the backend. Error: ${errorMessage}`
+      `PDF parsing is not available. Please ensure pdfjs-dist is installed in the backend. Error: ${errorMessage}`
     );
-    pdfParseLoadError = finalError;
+    pdfjsLoadError = finalError;
     throw finalError;
+  }
+};
+
+// Function to extract text from PDF using pdfjs-dist
+const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
+  const pdfjs = await loadPdfJs();
+  
+  try {
+    // Load the PDF document
+    const loadingTask = pdfjs.getDocument({ data: buffer });
+    const pdf = await loadingTask.promise;
+    
+    let fullText = '';
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      
+      // Combine all text items from the page
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      
+      fullText += pageText + '\n';
+    }
+    
+    return fullText.trim();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new BadRequestException(`Failed to parse PDF: ${errorMessage}. Please ensure the file is not password-protected or corrupted.`);
   }
 };
 
@@ -264,25 +256,13 @@ export class AtsService {
       
       if (file.mimetype === 'application/pdf') {
         try {
-          const pdfParser = await loadPdfParse();
-          const data = await pdfParser(file.buffer);
-          // Handle different return types from pdf-parse
-          if (typeof data === 'string') {
-            text = data;
-          } else if (data && typeof data === 'object' && 'text' in data) {
-            text = data.text || '';
-          } else {
-            text = String(data || '');
-          }
-          if (typeof text !== 'string') {
-            text = String(text);
-          }
+          text = await extractTextFromPdf(file.buffer);
         } catch (pdfError) {
           console.error('PDF parsing error details:', pdfError);
-          const errorMessage = pdfError instanceof Error ? pdfError.message : 'Unknown error';
           if (pdfError instanceof BadRequestException) {
             throw pdfError;
           }
+          const errorMessage = pdfError instanceof Error ? pdfError.message : 'Unknown error';
           throw new BadRequestException(`Failed to parse PDF file: ${errorMessage}. Please ensure the file is not password-protected or corrupted.`);
         }
       } else if (

@@ -330,7 +330,7 @@ export class AtsService {
     // Detailed analysis metrics
     // Keyword density: number of matched keywords per 1000 words
     const keywordDensity = wordCount > 0 
-      ? Math.round((matchedKeywords.length / wordCount) * 1000 * 100) / 100 
+      ? Math.round((keywordMatches / wordCount) * 1000 * 100) / 100 
       : 0; // per 1000 words
     
     // Section completeness (0-100)

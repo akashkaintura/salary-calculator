@@ -568,7 +568,7 @@ export class AtsService {
     return replacements;
   }
 
-  async saveCheckResult(userId: string, result: AtsCheckResult): Promise<AtsCheck> {
+  async saveCheckResult(userId: string, result: AtsCheckResult, resumeText?: string): Promise<AtsCheck> {
     const check = this.atsCheckRepository.create({
       userId,
       score: result.score,
@@ -581,6 +581,7 @@ export class AtsService {
       weaknesses: result.weaknesses,
       companyComparisons: result.companyComparisons.allCompanies || {},
       detailedAnalysis: result.detailedAnalysis,
+      resumeText: resumeText || null, // Store resume text for premium features
     });
     return await this.atsCheckRepository.save(check);
   }

@@ -227,7 +227,7 @@ export default function AtsChecker() {
     };
 
     const handlePremiumUpgrade = async () => {
-        if (!currentCheckId || !resumeText) {
+        if (!currentCheckId) {
             setError('Unable to process premium upgrade. Please check your resume again.');
             return;
         }
@@ -261,7 +261,7 @@ export default function AtsChecker() {
     };
 
     const handlePaymentSuccess = async () => {
-        if (!paymentOrder || !currentCheckId || !resumeText) {
+        if (!paymentOrder || !currentCheckId) {
             return;
         }
 
@@ -275,12 +275,11 @@ export default function AtsChecker() {
                 }
             );
 
-            // Get premium enhancements
+            // Get premium enhancements (resumeText is optional, backend will use stored text)
             const enhanceResponse = await axios.post(
                 `${API_BASE_URL}/api/ats/premium/enhance`,
                 {
                     checkId: currentCheckId,
-                    resumeText: resumeText,
                 },
                 {
                     headers: { Authorization: `Bearer ${token}` },

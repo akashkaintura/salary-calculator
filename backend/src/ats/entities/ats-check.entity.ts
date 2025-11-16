@@ -58,6 +58,9 @@ export class AtsCheck {
     technicalSkills: number;
   };
 
+  @Column({ type: 'text', nullable: true })
+  resumeText: string; // Store the parsed resume text for premium features
+
   @CreateDateColumn()
   createdAt: Date;
 

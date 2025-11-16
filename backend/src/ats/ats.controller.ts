@@ -108,9 +108,15 @@ export class AtsController {
     @UseGuards(JwtAuthGuard)
     async enhanceWithPremium(
         @CurrentUser() user: User,
-        @Body() body: { checkId: string; resumeText: string },
+        @Body() body: { checkId: string; resumeText?: string },
     ) {
         const check = await this.atsService.getCheckById(body.checkId, user.id);
+
+        // Use stored resume text if not provided
+        const resumeText = body.resumeText || check.resumeText;
+        if (!resumeText) {
+            throw new BadRequestException('Resume text is required for premium features');
+        }
 
         // Reconstruct check result from saved data
         const checkResult = {
@@ -137,7 +143,7 @@ export class AtsController {
         };
 
         const premiumFeatures = await this.atsService.generatePremiumEnhancements(
-            body.resumeText,
+            resumeText,
             checkResult as any,
         );
 

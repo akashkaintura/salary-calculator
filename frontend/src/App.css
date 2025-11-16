@@ -153,8 +153,20 @@
   gap: 2rem;
 }
 
+.content-wrapper.centered {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 0;
+}
+
+.content-wrapper.centered .form-card {
+  max-width: 600px;
+  width: 100%;
+}
+
 @media (min-width: 968px) {
-  .content-wrapper {
+  .content-wrapper:not(.centered) {
     grid-template-columns: 1fr 1fr;
   }
 }

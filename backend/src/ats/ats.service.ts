@@ -5,93 +5,72 @@ import * as mammoth from 'mammoth';
 import { AtsUsage } from './entities/ats-usage.entity';
 import { AtsCheck } from './entities/ats-check.entity';
 
-// Import pdfjs-dist for PDF parsing
-// pdfjs-dist is Mozilla's PDF.js library, more reliable than pdf-parse
-// pdfjs-dist is an ES module, so we must use dynamic import() only
-let pdfjsLib: any = null;
-let pdfjsLoadError: Error | null = null;
+// Import pdf-parse for PDF parsing (CommonJS compatible)
+// Using pdf-parse v1.1.1 which is stable and CommonJS compatible
+let pdfParse: ((buffer: Buffer) => Promise<{ text: string }>) | null = null;
+let pdfParseLoadError: Error | null = null;
 
-// Lazy load pdfjs-dist to handle both development and production environments
-// pdfjs-dist is an ES module, so we must use dynamic import() only (no require)
-const loadPdfJs = async () => {
-  if (pdfjsLib) {
-    return pdfjsLib;
+// Lazy load pdf-parse to handle both development and production environments
+const loadPdfParse = async (): Promise<(buffer: Buffer) => Promise<{ text: string }>> => {
+  if (pdfParse) {
+    return pdfParse;
   }
 
   // If we've already tried and failed, throw the cached error
-  if (pdfjsLoadError) {
-    throw pdfjsLoadError;
+  if (pdfParseLoadError) {
+    throw pdfParseLoadError;
   }
 
   try {
-    // pdfjs-dist is an ES module - MUST use dynamic import(), not require()
-    // Use string literal to ensure it's truly dynamic and not compiled to require()
-    const pdfjsModulePath = 'pdfjs-dist/build/pdf.mjs';
-    const pdfjsModule = await import(/* @vite-ignore */ pdfjsModulePath);
+    // pdf-parse is a CommonJS module, use require()
+    const pdfParseModule = require('pdf-parse');
     
-    // pdfjs-dist exports the API directly (not as default)
-    // The module exports getDocument and other functions directly
-    pdfjsLib = pdfjsModule;
-    
-    // Verify getDocument is available
-    if (!pdfjsLib || typeof pdfjsLib.getDocument !== 'function') {
-      // Try default export if direct doesn't work
-      if (pdfjsModule.default && typeof pdfjsModule.default.getDocument === 'function') {
-        pdfjsLib = pdfjsModule.default;
-      } else {
-        throw new Error('pdfjs-dist loaded but getDocument function is not available. Module keys: ' + Object.keys(pdfjsLib || {}).slice(0, 10).join(', '));
-      }
+    // pdf-parse exports the function directly
+    if (typeof pdfParseModule === 'function') {
+      pdfParse = pdfParseModule;
+    } else if (pdfParseModule && typeof pdfParseModule.default === 'function') {
+      pdfParse = pdfParseModule.default;
+    } else if (pdfParseModule && typeof pdfParseModule.pdfParse === 'function') {
+      pdfParse = pdfParseModule.pdfParse;
+    } else {
+      throw new Error('pdf-parse module format is unexpected. Got type: ' + typeof pdfParseModule);
     }
     
-    // Configure worker for Node.js environment (optional, but recommended)
-    if (pdfjsLib.GlobalWorkerOptions) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-    }
-    
-    console.log('pdfjs-dist loaded successfully via dynamic import');
-    return pdfjsLib;
+    console.log('pdf-parse loaded successfully');
+    return pdfParse;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
     
-    console.error('Failed to load pdfjs-dist:', errorMessage);
+    console.error('Failed to load pdf-parse:', errorMessage);
     if (errorStack) {
       console.error('Error stack:', errorStack);
     }
     
     const finalError = new BadRequestException(
-      `PDF parsing is not available. Please ensure pdfjs-dist is installed in the backend. Error: ${errorMessage}`
+      `PDF parsing is not available. Please ensure pdf-parse is installed in the backend. Error: ${errorMessage}`
     );
-    pdfjsLoadError = finalError;
+    pdfParseLoadError = finalError;
     throw finalError;
   }
 };
 
-// Function to extract text from PDF using pdfjs-dist
+// Function to extract text from PDF using pdf-parse
 const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
-  const pdfjs = await loadPdfJs();
+  const pdfParser = await loadPdfParse();
   
   try {
-    // Load the PDF document
-    const loadingTask = pdfjs.getDocument({ data: buffer });
-    const pdf = await loadingTask.promise;
+    // Parse PDF and extract text
+    const data = await pdfParser(buffer);
     
-    let fullText = '';
-    
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      
-      // Combine all text items from the page
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      
-      fullText += pageText + '\n';
+    // pdf-parse returns an object with a 'text' property
+    if (typeof data === 'string') {
+      return data.trim();
+    } else if (data && typeof data === 'object' && 'text' in data) {
+      return (data.text || '').trim();
+    } else {
+      return String(data || '').trim();
     }
-    
-    return fullText.trim();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new BadRequestException(`Failed to parse PDF: ${errorMessage}. Please ensure the file is not password-protected or corrupted.`);

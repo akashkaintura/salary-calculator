@@ -13,6 +13,8 @@ export interface Statistics {
     admins: number;
     regular: number;
     registeredThisMonth: number;
+    registeredThisWeek: number;
+    registeredToday: number;
   };
   salary: {
     totalCalculations: number;
@@ -28,11 +30,14 @@ export interface Statistics {
       city: string;
       count: number;
     }[];
+    calculationsThisMonth: number;
+    calculationsThisWeek: number;
   };
   ats: {
     totalChecks: number;
     averageScore: number;
     checksThisMonth: number;
+    checksThisWeek: number;
     premiumUpgrades: number;
   };
   payments: {
@@ -40,6 +45,8 @@ export interface Statistics {
     totalTransactions: number;
     successfulPayments: number;
     pendingPayments: number;
+    revenueThisMonth: number;
+    revenueThisWeek: number;
   };
 }
 
@@ -59,6 +66,11 @@ export class StatisticsService {
   async getStatistics(): Promise<Statistics> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
 
     // User Statistics
     const totalUsers = await this.userRepository.count();
@@ -69,13 +81,27 @@ export class StatisticsService {
       .createQueryBuilder('user')
       .where('user.createdAt >= :startOfMonth', { startOfMonth })
       .getCount();
+    const registeredThisWeek = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :startOfWeek', { startOfWeek })
+      .getCount();
+    const registeredToday = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :startOfToday', { startOfToday })
+      .getCount();
 
     // Salary Statistics
     const allCalculations = await this.salaryRepository.find({
-      select: ['ctc', 'inHandSalary', 'city'],
+      select: ['ctc', 'inHandSalary', 'city', 'createdAt'],
     });
 
     const totalCalculations = allCalculations.length;
+    const calculationsThisMonth = allCalculations.filter(
+      c => new Date(c.createdAt) >= startOfMonth
+    ).length;
+    const calculationsThisWeek = allCalculations.filter(
+      c => new Date(c.createdAt) >= startOfWeek
+    ).length;
     const ctcValues = allCalculations.map(c => Number(c.ctc)).filter(v => v > 0);
     const inHandValues = allCalculations.map(c => Number(c.inHandSalary)).filter(v => v > 0);
 
@@ -106,6 +132,9 @@ export class StatisticsService {
     const checksThisMonth = allAtsChecks.filter(
       c => new Date(c.createdAt) >= startOfMonth
     ).length;
+    const checksThisWeek = allAtsChecks.filter(
+      c => new Date(c.createdAt) >= startOfWeek
+    ).length;
 
     // Payment Statistics
     const allPayments = await this.paymentRepository.find({
@@ -119,6 +148,22 @@ export class StatisticsService {
     const pendingPayments = allPayments.filter(p => p.status === PaymentStatus.PENDING).length;
     const premiumUpgrades = successfulPayments.length;
 
+    // Payment revenue trends
+    const paymentsThisMonth = allPayments.filter(
+      p => new Date(p.createdAt) >= startOfMonth && p.status === PaymentStatus.COMPLETED
+    );
+    const revenueThisMonth = paymentsThisMonth.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0
+    );
+    const paymentsThisWeek = allPayments.filter(
+      p => new Date(p.createdAt) >= startOfWeek && p.status === PaymentStatus.COMPLETED
+    );
+    const revenueThisWeek = paymentsThisWeek.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0
+    );
+
     return {
       users: {
         total: totalUsers,
@@ -126,6 +171,8 @@ export class StatisticsService {
         admins: adminUsers,
         regular: regularUsers,
         registeredThisMonth,
+        registeredThisWeek,
+        registeredToday,
       },
       salary: {
         totalCalculations,
@@ -135,11 +182,14 @@ export class StatisticsService {
         averageInHand: Number(averageInHand.toFixed(2)),
         salaryRanges,
         topCities: cityCounts.slice(0, 10),
+        calculationsThisMonth,
+        calculationsThisWeek,
       },
       ats: {
         totalChecks: totalAtsChecks,
         averageScore: Number(averageScore.toFixed(2)),
         checksThisMonth,
+        checksThisWeek,
         premiumUpgrades,
       },
       payments: {
@@ -147,6 +197,8 @@ export class StatisticsService {
         totalTransactions: allPayments.length,
         successfulPayments: successfulPayments.length,
         pendingPayments,
+        revenueThisMonth: Number(revenueThisMonth.toFixed(2)),
+        revenueThisWeek: Number(revenueThisWeek.toFixed(2)),
       },
     };
   }

@@ -17,6 +17,8 @@ interface User {
   email: string;
   githubProfile: string;
   linkedinProfile?: string;
+  role?: 'user' | 'admin';
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {

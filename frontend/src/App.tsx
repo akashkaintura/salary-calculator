@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
 import AtsChecker from './components/AtsChecker'
+import AdminDashboard from './components/AdminDashboard'
 import './App.css'
 
 const getApiBaseUrl = () => {
@@ -56,7 +57,7 @@ function App() {
   const [error, setError] = useState('')
   const [history, setHistory] = useState<any[]>([])
   const [showHistory, setShowHistory] = useState(false)
-  const [activeTab, setActiveTab] = useState<'salary' | 'ats'>('salary')
+  const [activeTab, setActiveTab] = useState<'salary' | 'ats' | 'admin'>('salary')
 
   // Handle auth callback
   useEffect(() => {

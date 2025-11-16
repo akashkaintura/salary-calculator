@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 import { SalaryCalculation } from '../salary/entities/salary-calculation.entity';
 import { AtsCheck } from '../ats/entities/ats-check.entity';
-import { Payment } from '../payment/entities/payment.entity';
+import { Payment, PaymentStatus } from '../payment/entities/payment.entity';
 
 export interface Statistics {
   users: {
@@ -138,7 +138,7 @@ export class StatisticsService {
 
     // Payment Statistics
     const allPayments = await this.paymentRepository.find({
-      select: ['amount', 'status'],
+      select: ['amount', 'status', 'createdAt'],
     });
     const successfulPayments = allPayments.filter(p => p.status === PaymentStatus.COMPLETED);
     const totalRevenue = successfulPayments.reduce(

@@ -352,11 +352,12 @@ export default function AtsChecker() {
                         <div className="compatibility-card" style={{ borderColor: getScoreColor(result.detailedAnalysis.atsCompatibility) }}>
                             <div className="compatibility-score-circle" style={{ borderColor: getScoreColor(result.detailedAnalysis.atsCompatibility) }}>
                                 <span className="compatibility-value">{result.detailedAnalysis.atsCompatibility}%</span>
-                                <span className="compatibility-label">ATS Compatible</span>
+                                <span className="compatibility-label-line">ATS</span>
+                                <span className="compatibility-label-line">COMPATIBLE</span>
                             </div>
                             <div className="compatibility-details">
                                 <p>This score indicates how well your resume will perform across <strong>95% of ATS systems</strong> used by companies worldwide.</p>
-                                <p className="compatibility-note">Our algorithm analyzes keywords, formatting, structure, and content to ensure maximum compatibility with most Applicant Tracking Systems.</p>
+                                <p className="compatibility-note">Our algorithm analyzes keywords, formatting, structure, and content to ensure maximum compatibility with most <em>Applicant Tracking Systems</em>.</p>
                             </div>
                         </div>
                     </div>

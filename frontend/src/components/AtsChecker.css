@@ -820,10 +820,10 @@
 }
 
 .compatibility-score-circle {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  border: 4px solid;
+  border: 5px solid;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -831,25 +831,24 @@
   background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
+  gap: 0.25rem;
 }
 
 .compatibility-value {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 800;
   line-height: 1;
-  background: linear-gradient(135deg, #111827 0%, #374151 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #111827;
+  margin-bottom: 0.25rem;
 }
 
-.compatibility-label {
-  font-size: 0.875rem;
+.compatibility-label-line {
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-top: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #6b7280;
+  color: #374151;
+  line-height: 1.2;
 }
 
 .compatibility-details {

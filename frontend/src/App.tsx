@@ -313,16 +313,6 @@ function App() {
             <FileCheck size={20} />
             Document Converter
           </button>
-          {(user.role === 'admin' || user.isAdmin === true) && (
-            <button
-              className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
-              onClick={() => setActiveTab('admin')}
-              title="Admin Dashboard"
-            >
-              <BarChart3 size={20} />
-              Admin Dashboard
-            </button>
-          )}
         </div>
 
         <div className="main-content">

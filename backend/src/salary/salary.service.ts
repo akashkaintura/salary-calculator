@@ -83,13 +83,13 @@ export class SalaryService {
     const grossMonthly = basicSalary + hra + specialAllowance;
 
     // EPF (Employee Provident Fund): 12% of basic salary (employee contribution)
-    // Standard EPF rule: 12% of basic salary, capped at ₹1,800/month
-    // This means if basic salary > ₹15,000, EPF is capped at ₹1,800 (12% of ₹15,000)
-    // If basic salary <= ₹15,000, EPF is 12% of actual basic salary
+    // Standard EPF rule:
+    // - If basic salary > ₹15,000: EPF = 12% of ₹15,000 = ₹1,800/month
+    // - If basic salary <= ₹15,000: EPF = 12% of actual basic salary
     const pfContributionRate = 0.12; // 12% EPF contribution rate
-    const pfMaxContribution = 1800; // Maximum EPF contribution per month (12% of ₹15,000)
-    const pfUncapped = basicSalary * pfContributionRate;
-    const pf = Math.min(pfUncapped, pfMaxContribution); // Apply cap if basic > ₹15,000
+    const pfSalaryCap = 15000; // EPF is calculated on max ₹15,000 basic salary
+    const pfEffectiveBasic = basicSalary > pfSalaryCap ? pfSalaryCap : basicSalary;
+    const pf = pfEffectiveBasic * pfContributionRate;
 
     // ESI: 0.75% of gross (if applicable, typically for gross salary <= ₹21,000)
     const esiThreshold = 21000;

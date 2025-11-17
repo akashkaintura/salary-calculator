@@ -42,15 +42,10 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Res() res: Response) {
-    // Check if Google OAuth is configured before initiating flow
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-      return res.status(503).json({
-        error: 'Google OAuth is not configured',
-        message: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables',
-      });
-    }
-    // Initiates Google OAuth flow (will redirect to Google)
+  async googleAuth() {
+    // Initiates Google OAuth flow
+    // If credentials are not configured, Google will reject the request
+    // The error will be handled by Passport's error handling
   }
 
   @Get('google/callback')

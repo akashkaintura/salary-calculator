@@ -586,13 +586,13 @@ export default function AtsChecker() {
                                         ))}
                                 </>
                             )}
-                            {(!result || !result.premiumFeatures || 
-                              (result.premiumFeatures.resumeOptimizationTips.length === 0 && 
-                               result.premiumFeatures.keywordReplacements.length === 0)) && (
-                                <div className="fix-tip-card">
-                                    <p>Detailed fix instructions for "{selectedFix}" will be available here. This feature provides step-by-step guidance to improve your resume.</p>
-                                </div>
-                            )}
+                            {(!result || !result.premiumFeatures ||
+                                (result.premiumFeatures.resumeOptimizationTips.length === 0 &&
+                                    result.premiumFeatures.keywordReplacements.length === 0)) && (
+                                    <div className="fix-tip-card">
+                                        <p>Detailed fix instructions for "{selectedFix}" will be available here. This feature provides step-by-step guidance to improve your resume.</p>
+                                    </div>
+                                )}
                         </div>
                         <button className="apply-fix-btn" onClick={() => setShowFixDetails(false)}>
                             Got it! ✓
@@ -642,7 +642,7 @@ export default function AtsChecker() {
                             <span className="current-price">₹49</span>
                             <span className="discount-badge">50% OFF</span>
                         </div>
-                        <button 
+                        <button
                             className="unlock-now-btn"
                             onClick={handleUpgrade}
                         >

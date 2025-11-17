@@ -42,7 +42,7 @@ interface SalaryBreakdown {
   esi: number
   professionalTax: number
   incomeTax: number
-  gratuity: number
+  gratuity?: number
   inHandSalary: number
   monthlyDeductions: number
   annualDeductions: number
@@ -598,13 +598,15 @@ function App() {
                   <span className="value">-₹{result.incomeTax.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                 </div>
 
-                <div className="result-item" style={{ background: 'rgba(34, 197, 94, 0.1)', borderLeft: '3px solid #22c55e' }}>
-                  <span className="label">Gratuity (Monthly Accrual)</span>
-                  <span className="value" style={{ color: '#22c55e' }}>+₹{result.gratuity.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                  <small style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
-                    Based on 5 years of service (accrual benefit)
-                  </small>
-                </div>
+                {result.gratuity && result.gratuity > 0 && (
+                  <div className="result-item" style={{ background: 'rgba(34, 197, 94, 0.1)', borderLeft: '3px solid #22c55e' }}>
+                    <span className="label">Gratuity (Monthly Accrual)</span>
+                    <span className="value" style={{ color: '#22c55e' }}>+₹{result.gratuity.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    <small style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
+                      Based on 5 years of service (accrual benefit)
+                    </small>
+                  </div>
+                )}
 
                 <div className="result-item total-deduction">
                   <span className="label">Total Monthly Deductions</span>

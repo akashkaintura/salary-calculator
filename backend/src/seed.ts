@@ -40,6 +40,21 @@ async function seed() {
       .delete()
       .from(SalaryCalculation)
       .execute();
+    
+    // Update existing users to set gratuity if needed (for existing salary calculations)
+    // First, let's check if gratuity column exists and update existing records
+    try {
+      await AppDataSource.query(`
+        UPDATE salary_calculations 
+        SET gratuity = (basic_salary * 15.0 / 26.0) * 5.0 / 12.0 
+        WHERE gratuity IS NULL;
+      `);
+      console.log('✅ Updated existing salary calculations with gratuity');
+    } catch (error) {
+      // Column might not exist yet, that's okay
+      console.log('ℹ️  Gratuity column will be created by synchronize');
+    }
+    
     await AppDataSource.createQueryBuilder()
       .delete()
       .from(User)
@@ -77,6 +92,8 @@ async function seed() {
     console.log('👤 Created test user');
 
     // Sample data
+    // Gratuity calculation: (Basic Salary × 15/26) × Years of Service / 12 (monthly accrual)
+    // For 5 years: (Basic Salary × 15/26) × 5 / 12
     const sampleCalculations = [
       {
         ctc: 1000000,
@@ -94,6 +111,7 @@ async function seed() {
         esi: 0,
         professionalTax: 200,
         incomeTax: 0,
+        gratuity: 11238.46, // (38958.33 × 15/26) × 5 / 12
         inHandSalary: 70832.67,
         monthlyDeductions: 4875.00,
         annualDeductions: 58500.00,
@@ -115,6 +133,7 @@ async function seed() {
         esi: 0,
         professionalTax: 200,
         incomeTax: 3166.67,
+        gratuity: 16586.54, // (57500.00 × 15/26) × 5 / 12
         inHandSalary: 104733.33,
         monthlyDeductions: 10266.67,
         annualDeductions: 123200.00,
@@ -136,6 +155,7 @@ async function seed() {
         esi: 0,
         professionalTax: 0,
         incomeTax: 0,
+        gratuity: 9615.38, // (33333.33 × 15/26) × 5 / 12
         inHandSalary: 62666.67,
         monthlyDeductions: 4000.00,
         annualDeductions: 48000.00,
@@ -155,6 +175,7 @@ async function seed() {
       console.log(`   Fixed CTC: ₹${calc.fixedCtc.toLocaleString('en-IN')}`);
       console.log(`   Variable Pay: ₹${calc.variablePay.toLocaleString('en-IN')}`);
       console.log(`   Insurance: ₹${calc.insurance.toLocaleString('en-IN')}`);
+      console.log(`   Gratuity (Monthly Accrual): ₹${calc.gratuity.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`);
       console.log(`   In-Hand Salary: ₹${calc.inHandSalary.toLocaleString('en-IN')}`);
     });
 

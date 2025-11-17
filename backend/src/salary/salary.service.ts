@@ -21,7 +21,7 @@ export interface SalaryBreakdown {
   esi: number;
   professionalTax: number;
   incomeTax: number;
-  gratuity: number;
+  gratuity?: number;
   inHandSalary: number;
   monthlyDeductions: number;
   annualDeductions: number;

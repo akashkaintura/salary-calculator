@@ -66,7 +66,7 @@ const otherCities = [
   'Bihar Sharif', 'Panipat', 'Darbhanga', 'Bally', 'Aizawl', 'Dewas',
   'Ichalkaranji', 'Karnal', 'Bathinda', 'Jalna', 'Eluru', 'Barasat',
   'Kirari Suleman Nagar', 'Purnia', 'Satna', 'Mau', 'Sonipat', 
-  'Farrukhabad', 'Sagar', 'Rourkela', 'Durg', 'Imphal', 'Ratlam', 'Hapur', 
+  'Farrukhabad', 'Sagar', 'Durg', 'Imphal', 'Ratlam', 'Hapur', 
   'Arrah', 'Karimnagar', 'Etawah', 'Bharatpur', 'Begusarai', 'New Delhi',
   'Chhapra', 'Ramagundam', 'Pali', 'Vizianagaram', 'Katihar', 'Hardwar', 
   'Nagercoil', 'Thanjavur', 'Murwara', 'Naihati', 'Sambhal', 'Nadiad', 
@@ -326,6 +326,22 @@ async function seedCommonData() {
     const cityRepository = AppDataSource.getRepository(City);
     const companyRepository = AppDataSource.getRepository(Company);
     const designationRepository = AppDataSource.getRepository(Designation);
+
+    // Clear existing data
+    console.log('🗑️  Clearing existing common data...');
+    await AppDataSource.createQueryBuilder()
+      .delete()
+      .from(Designation)
+      .execute();
+    await AppDataSource.createQueryBuilder()
+      .delete()
+      .from(Company)
+      .execute();
+    await AppDataSource.createQueryBuilder()
+      .delete()
+      .from(City)
+      .execute();
+    console.log('✅ Cleared existing cities, companies, and designations');
 
     // Seed Cities with priority
     console.log('🏙️  Seeding cities...');

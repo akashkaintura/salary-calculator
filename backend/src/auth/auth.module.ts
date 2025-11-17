@@ -10,6 +10,26 @@ import { GitHubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+function createProviders() {
+  // Check environment variables directly (available at module definition time)
+  const clientID = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const hasGoogleCredentials = !!(clientID && clientSecret);
+
+  const providers: any[] = [
+    AuthService,
+    GitHubStrategy,
+    JwtStrategy,
+  ];
+
+  // Only add GoogleStrategy if credentials are available
+  if (hasGoogleCredentials) {
+    providers.push(GoogleStrategy);
+  }
+
+  return providers;
+}
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
@@ -24,9 +44,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
       inject: [ConfigService],
     }),
+    ConfigModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, GitHubStrategy, GoogleStrategy, JwtStrategy],
+  providers: createProviders(),
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

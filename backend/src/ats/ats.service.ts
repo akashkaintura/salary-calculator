@@ -188,22 +188,28 @@ const extractTextFromPdf = async (buffer: Buffer, tryOCR: boolean = true): Promi
     
     // pdf-parse returns an object with a 'text' property and metadata
     let text = '';
+    let numPages = 0;
+    
     if (typeof data === 'string') {
       text = data;
     } else if (data && typeof data === 'object') {
       // Check for text property
       if ('text' in data) {
-        text = data.text || '';
+        text = (data as any).text || '';
+      }
+      // Extract number of pages
+      if ('numpages' in data) {
+        numPages = typeof (data as any).numpages === 'number' ? (data as any).numpages : 0;
       }
       // Log metadata for debugging
-      if (data.info) {
-        console.log('PDF Info:', JSON.stringify(data.info));
+      if ('info' in data && (data as any).info) {
+        console.log('PDF Info:', JSON.stringify((data as any).info));
       }
-      if (data.metadata) {
-        console.log('PDF Metadata:', JSON.stringify(data.metadata));
+      if ('metadata' in data && (data as any).metadata) {
+        console.log('PDF Metadata:', JSON.stringify((data as any).metadata));
       }
-      if (data.numpages !== undefined) {
-        console.log('PDF Pages:', data.numpages);
+      if (numPages > 0) {
+        console.log('PDF Pages:', numPages);
       }
     } else {
       text = String(data || '');
@@ -215,7 +221,6 @@ const extractTextFromPdf = async (buffer: Buffer, tryOCR: boolean = true): Promi
     // More lenient check - allow very short text (might be a simple resume)
     if (!text || text.length < 10) {
       // Check if PDF has pages
-      const numPages = (data && typeof data === 'object' && 'numpages' in data) ? data.numpages : 0;
       
       // If no text found and OCR is enabled, try OCR as fallback
       if (numPages > 0 && tryOCR) {

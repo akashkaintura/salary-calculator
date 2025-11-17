@@ -38,11 +38,22 @@
    - **Developer contact information**: Your email address
    - Click **"Save and Continue"**
 5. **Scopes** (Step 2):
-   - Click **"Add or Remove Scopes"**
-   - Add these scopes:
-     - `.../auth/userinfo.email`
-     - `.../auth/userinfo.profile`
-   - Click **"Update"** then **"Save and Continue"**
+   - Click **"Add or Remove Scopes"** button
+   - A popup/modal will appear showing available scopes
+   - **Where to find the scopes:**
+     - Scroll down or search for these scopes in the list:
+     - Look for: **"userinfo.email"** (full name: `https://www.googleapis.com/auth/userinfo.email`)
+     - Look for: **"userinfo.profile"** (full name: `https://www.googleapis.com/auth/userinfo.profile`)
+   - **How to add them:**
+     - Check the boxes next to:
+       - ✅ `.../auth/userinfo.email` (See your primary Google Account email address)
+       - ✅ `.../auth/userinfo.profile` (See your personal info, including any personal info you've made publicly available)
+   - Click **"Update"** button at the bottom of the popup
+   - Then click **"Save and Continue"** on the main screen
+   
+   **Note**: If you can't find these scopes, you can also manually add them by clicking "Add custom scope" and entering:
+   - `https://www.googleapis.com/auth/userinfo.email`
+   - `https://www.googleapis.com/auth/userinfo.profile`
 6. **Test users** (Step 3):
    - Add your email address as a test user (if app is in testing mode)
    - Click **"Save and Continue"**

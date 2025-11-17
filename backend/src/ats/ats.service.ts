@@ -53,32 +53,89 @@ const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
   const pdfParser = await loadPdfParse();
   
   try {
+    // Validate buffer
+    if (!buffer || buffer.length === 0) {
+      throw new BadRequestException('PDF file is empty or invalid');
+    }
+
+    // Check if it's actually a PDF by checking the header
+    const pdfHeader = buffer.slice(0, 4).toString();
+    if (pdfHeader !== '%PDF') {
+      throw new BadRequestException('File does not appear to be a valid PDF file');
+    }
+
     // Parse PDF and extract text
     const data = await pdfParser(buffer);
     
-    // pdf-parse returns an object with a 'text' property
+    // pdf-parse returns an object with a 'text' property and metadata
     let text = '';
     if (typeof data === 'string') {
       text = data;
-    } else if (data && typeof data === 'object' && 'text' in data) {
-      text = data.text || '';
+    } else if (data && typeof data === 'object') {
+      // Check for text property
+      if ('text' in data) {
+        text = data.text || '';
+      }
+      // Log metadata for debugging
+      if (data.info) {
+        console.log('PDF Info:', JSON.stringify(data.info));
+      }
+      if (data.metadata) {
+        console.log('PDF Metadata:', JSON.stringify(data.metadata));
+      }
+      if (data.numpages !== undefined) {
+        console.log('PDF Pages:', data.numpages);
+      }
     } else {
       text = String(data || '');
     }
     
-    if (!text || text.trim().length === 0) {
-      throw new BadRequestException('Could not extract text from PDF. The file may be empty, corrupted, or contain only images.');
+    // Clean up text (remove excessive whitespace but preserve structure)
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    // More lenient check - allow very short text (might be a simple resume)
+    if (!text || text.length < 10) {
+      // Check if PDF has pages
+      const numPages = (data && typeof data === 'object' && 'numpages' in data) ? data.numpages : 0;
+      if (numPages > 0) {
+        throw new BadRequestException(
+          `Could not extract text from PDF. The PDF appears to be image-based (scanned) or contains only images. ` +
+          `Please use a PDF with selectable text, or convert your scanned PDF to text using OCR software first. ` +
+          `PDF has ${numPages} page(s) but no extractable text was found.`
+        );
+      } else {
+        throw new BadRequestException(
+          'Could not extract text from PDF. The file may be empty, corrupted, password-protected, or contain only images. ' +
+          'Please ensure the PDF contains selectable text and is not a scanned image.'
+        );
+      }
     }
     
-    return text.trim();
+    console.log(`Successfully extracted ${text.length} characters from PDF`);
+    return text;
   } catch (error) {
     if (error instanceof BadRequestException) {
       throw error;
     }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    throw new BadRequestException(
-      `Failed to parse PDF: ${errorMessage}. Please ensure the file is not password-protected or corrupted.`
-    );
+    console.error('PDF parsing error:', errorMessage);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Provide more specific error messages
+    if (errorMessage.includes('password') || errorMessage.includes('encrypted')) {
+      throw new BadRequestException(
+        'PDF is password-protected. Please remove the password and try again.'
+      );
+    } else if (errorMessage.includes('corrupt') || errorMessage.includes('invalid')) {
+      throw new BadRequestException(
+        'PDF file appears to be corrupted or invalid. Please try with a different PDF file.'
+      );
+    } else {
+      throw new BadRequestException(
+        `Failed to parse PDF: ${errorMessage}. ` +
+        `Please ensure the file is a valid PDF with selectable text (not a scanned image) and is not password-protected.`
+      );
+    }
   }
 };
 

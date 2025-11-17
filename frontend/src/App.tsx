@@ -415,7 +415,7 @@ function App() {
                 </form>
               </div>
             </>
-          ) : activeTab === 'admin' ? (
+          ) : (
             <div className="content-wrapper">
               <AdminDashboard />
             </div>

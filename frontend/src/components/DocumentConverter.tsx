@@ -1,4 +1,5 @@
-import { FileText, Merge, Split, Compress, FileDown, FileUp, Edit, Image, PenTool, Stamp, RotateCw, Construction } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Merge, Split, Minimize2, FileDown, FileUp, Edit, Image, PenTool, Stamp, RotateCw, Construction, X } from 'lucide-react';
 import './DocumentConverter.css';
 
 interface Tool {
@@ -28,7 +29,7 @@ const tools: Tool[] = [
         id: 'compress-pdf',
         title: 'Compress PDF',
         description: 'Reduce file size while optimizing for maximal PDF quality.',
-        icon: <Compress size={32} />,
+        icon: <Minimize2 size={32} />,
         color: '#10b981',
     },
     {
@@ -118,6 +119,14 @@ const tools: Tool[] = [
 ];
 
 export default function DocumentConverter() {
+    const [showComingSoon, setShowComingSoon] = useState(false);
+    const [selectedTool, setSelectedTool] = useState<string | null>(null);
+
+    const handleToolClick = (toolId: string, toolTitle: string) => {
+        setSelectedTool(toolTitle);
+        setShowComingSoon(true);
+    };
+
     return (
         <div className="document-converter">
             <div className="converter-header">
@@ -130,7 +139,11 @@ export default function DocumentConverter() {
 
             <div className="tools-grid">
                 {tools.map((tool) => (
-                    <div key={tool.id} className="tool-card">
+                    <div 
+                        key={tool.id} 
+                        className="tool-card"
+                        onClick={() => handleToolClick(tool.id, tool.title)}
+                    >
                         <div className="tool-icon" style={{ color: tool.color }}>
                             {tool.icon}
                         </div>
@@ -143,6 +156,29 @@ export default function DocumentConverter() {
                     </div>
                 ))}
             </div>
+
+            {/* Coming Soon Modal */}
+            {showComingSoon && (
+                <div className="coming-soon-overlay" onClick={() => setShowComingSoon(false)}>
+                    <div className="coming-soon-modal" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                            className="coming-soon-close"
+                            onClick={() => setShowComingSoon(false)}
+                        >
+                            <X size={24} />
+                        </button>
+                        <div className="coming-soon-content">
+                            <Construction size={64} className="coming-soon-icon" />
+                            <h2>Coming Soon!</h2>
+                            <p className="coming-soon-tool">{selectedTool}</p>
+                            <p className="coming-soon-message">
+                                We're working hard to bring you this feature. 
+                                It will be available soon!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

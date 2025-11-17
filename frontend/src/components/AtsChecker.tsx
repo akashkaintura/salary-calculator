@@ -273,7 +273,7 @@ export default function AtsChecker() {
                 <div className="ats-results">
                     <div className="results-header">
                         <div className="results-header-left">
-                            <button 
+                            <button
                                 onClick={() => {
                                     if (currentIndex > 0) {
                                         const prevIndex = currentIndex - 1;
@@ -300,14 +300,14 @@ export default function AtsChecker() {
                             </button>
                             <h3>Analysis Results</h3>
                         </div>
-                        <button 
-                            onClick={() => { 
-                                setResult(null); 
-                                setFile(null); 
+                        <button
+                            onClick={() => {
+                                setResult(null);
+                                setFile(null);
                                 setCurrentIndex(-1);
                                 setHistory([]);
                                 window.history.pushState({ resultIndex: -1 }, '', window.location.pathname);
-                            }} 
+                            }}
                             className="new-check-btn"
                         >
                             New Check

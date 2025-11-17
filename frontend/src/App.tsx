@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calculator, MapPin, DollarSign, TrendingUp, Shield, LogOut, History, Building2, Plane, BarChart3, X, FileText, FileCheck } from 'lucide-react'
+import { Calculator, MapPin, DollarSign, TrendingUp, Shield, LogOut, History, Building2, Plane, BarChart3, X, FileText, FileCheck, User } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
@@ -19,6 +19,7 @@ interface SalaryData {
   ctc: string
   city: string
   company: string
+  designation: string
   isRelocation: boolean
   relocationAllowance: string
   githubProfile: string
@@ -54,6 +55,7 @@ function App() {
     ctc: '',
     city: '',
     company: '',
+    designation: '',
     isRelocation: false,
     relocationAllowance: '',
     githubProfile: '',
@@ -113,12 +115,137 @@ function App() {
     }
   }
 
+  // Comprehensive list of Indian cities
   const indianCities = [
     'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata',
     'Pune', 'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow', 'Kanpur',
     'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Patna',
-    'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad'
-  ]
+    'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad',
+    'Meerut', 'Rajkot', 'Varanasi', 'Srinagar', 'Amritsar', 'Aurangabad',
+    'Dhanbad', 'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur',
+    'Gwalior', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota',
+    'Guwahati', 'Chandigarh', 'Solapur', 'Hubli', 'Tiruchirappalli', 'Bareilly',
+    'Moradabad', 'Mysore', 'Gurgaon', 'Aligarh', 'Jalandhar', 'Tirunelveli',
+    'Bhubaneswar', 'Salem', 'Warangal', 'Mira-Bhayandar', 'Thiruvananthapuram',
+    'Bhiwandi', 'Saharanpur', 'Guntur', 'Amravati', 'Bikaner', 'Noida',
+    'Jamshedpur', 'Bhilai', 'Cuttack', 'Firozabad', 'Kochi', 'Nellore',
+    'Bhavnagar', 'Dehradun', 'Durgapur', 'Asansol', 'Rourkela', 'Nanded',
+    'Kolhapur', 'Ajmer', 'Akola', 'Gulbarga', 'Jamnagar', 'Ujjain',
+    'Loni', 'Siliguri', 'Jhansi', 'Ulhasnagar', 'Jammu', 'Sangli-Miraj',
+    'Mangalore', 'Erode', 'Belgaum', 'Ambattur', 'Tirupati', 'Malegaon',
+    'Gaya', 'Jalgaon', 'Udaipur', 'Maheshtala', 'Tiruppur', 'Davanagere',
+    'Kozhikode', 'Kurnool', 'Rajpur Sonarpur', 'Rajahmundry', 'Bokaro',
+    'South Dumdum', 'Bellary', 'Patiala', 'Gopalpur', 'Agartala', 'Bhagalpur',
+    'Muzaffarnagar', 'Bhatpara', 'Panihati', 'Latur', 'Dhule', 'Rohtak',
+    'Korba', 'Bhilwara', 'Berhampur', 'Muzaffarpur', 'Ahmednagar', 'Mathura',
+    'Kollam', 'Avadi', 'Kadapa', 'Anantapur', 'Kamarhati', 'Sambalpur',
+    'Bilaspur', 'Shahjahanpur', 'Satara', 'Bijapur', 'Rampur', 'Shivamogga',
+    'Chandrapur', 'Junagadh', 'Thrissur', 'Alwar', 'Bardhaman', 'Kulti',
+    'Kakinada', 'Nizamabad', 'Parbhani', 'Tumkur', 'Khammam', 'Ozhukarai',
+    'Bihar Sharif', 'Panipat', 'Darbhanga', 'Bally', 'Aizawl', 'Dewas',
+    'Ichalkaranji', 'Karnal', 'Bathinda', 'Jalna', 'Eluru', 'Barasat',
+    'Kirari Suleman Nagar', 'Purnia', 'Satna', 'Mau', 'Sonipat', 'Farrukhabad',
+    'Sagar', 'Rourkela', 'Durg', 'Imphal', 'Ratlam', 'Hapur', 'Arrah',
+    'Karimnagar', 'Anantapur', 'Etawah', 'Bharatpur', 'Begusarai', 'New Delhi',
+    'Chhapra', 'Kadapa', 'Ramagundam', 'Pali', 'Satna', 'Vizianagaram',
+    'Katihar', 'Hardwar', 'Sonipat', 'Nagercoil', 'Thanjavur', 'Murwara',
+    'Naihati', 'Sambhal', 'Nadiad', 'Yamunanagar', 'English Bazar', 'Eluru',
+    'Munger', 'Panchkula', 'Raayachuru', 'Panvel', 'Deoghar', 'Ongole',
+    'Nandyal', 'Morena', 'Bhiwani', 'Porbandar', 'Palakkad', 'Anand',
+    'Pundri', 'Baharampur', 'Barmer', 'Morvi', 'Orai', 'Bahraich',
+    'Phagwara', 'Tinsukia', 'Guntakal', 'Srikakulam', 'Balasore', 'Ambikapur',
+    'Rewa', 'Raichur', 'Vrindavan', 'Rajpura', 'Bhiwadi', 'Bhusawal',
+    'Chittoor', 'Bidar', 'Bilaspur', 'Bettiah', 'Bhadravati', 'Bhadrak',
+    'Bharuch', 'Bhandara', 'Bharatpur', 'Bharatpur', 'Bharatpur', 'Bharatpur'
+  ].sort()
+
+  // Comprehensive list of companies
+  const companies = [
+    // Tech Giants
+    'Google', 'Microsoft', 'Amazon', 'Apple', 'Meta (Facebook)', 'Netflix',
+    'Oracle', 'IBM', 'Salesforce', 'Adobe', 'Intel', 'NVIDIA',
+    // Indian Tech
+    'TCS', 'Infosys', 'Wipro', 'HCL Technologies', 'Tech Mahindra', 'Cognizant',
+    'Accenture', 'Capgemini', 'LTI (Larsen & Toubro Infotech)', 'Mindtree',
+    'Mphasis', 'Zensar', 'Persistent Systems', 'Cyient', 'Hexaware',
+    // Product Companies
+    'Flipkart', 'Amazon India', 'Myntra', 'Swiggy', 'Zomato', 'Ola', 'Uber',
+    'Paytm', 'PhonePe', 'Razorpay', 'Razorpay', 'Cred', 'Groww', 'Zerodha',
+    'BYJU\'S', 'Unacademy', 'Vedantu', 'WhiteHat Jr', 'UpGrad', 'Simplilearn',
+    // Startups & Unicorns
+    'Razorpay', 'CRED', 'Groww', 'Zerodha', 'PhonePe', 'Paytm', 'Meesho',
+    'ShareChat', 'Dailyhunt', 'InMobi', 'Freshworks', 'Zoho', 'Chargebee',
+    'Postman', 'BrowserStack', 'Hasura', 'Razorpay', 'Razorpay', 'Razorpay',
+    // Banking & Finance
+    'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Kotak Mahindra Bank', 'SBI',
+    'Yes Bank', 'IndusInd Bank', 'Punjab National Bank', 'Bank of Baroda',
+    'IDFC First Bank', 'RBL Bank', 'Federal Bank', 'AU Small Finance Bank',
+    // Consulting
+    'McKinsey & Company', 'BCG (Boston Consulting Group)', 'Bain & Company',
+    'Deloitte', 'PwC', 'EY (Ernst & Young)', 'KPMG', 'Accenture Strategy',
+    // E-commerce & Retail
+    'Reliance Retail', 'Future Group', 'DMart', 'Big Bazaar', 'Spencer\'s',
+    'Tata Group', 'Aditya Birla Group', 'Mahindra Group', 'Godrej Group',
+    // Manufacturing & Auto
+    'Tata Motors', 'Mahindra & Mahindra', 'Maruti Suzuki', 'Bajaj Auto',
+    'Hero MotoCorp', 'TVS Motor', 'Ashok Leyland', 'Eicher Motors',
+    // Pharma & Healthcare
+    'Sun Pharma', 'Dr. Reddy\'s', 'Cipla', 'Lupin', 'Aurobindo Pharma',
+    'Biocon', 'Zydus Cadila', 'Torrent Pharma', 'Glenmark', 'Alkem Labs',
+    // Others
+    'Jio', 'Airtel', 'Vodafone Idea', 'Reliance Jio', 'BSNL', 'Tata Communications',
+    'Quest Global', 'GlobalLogic', 'EPAM Systems', 'Publicis Sapient',
+    'Thoughtworks', 'Atlassian', 'Atlassian', 'Atlassian', 'Atlassian'
+  ].sort()
+
+  // Comprehensive list of designations/positions
+  const designations = [
+    // Software Engineering
+    'Software Engineer', 'Senior Software Engineer', 'Lead Software Engineer',
+    'Principal Software Engineer', 'Staff Software Engineer', 'Software Engineer I',
+    'Software Engineer II', 'Software Engineer III', 'Software Development Engineer',
+    'Senior Software Development Engineer', 'Software Development Engineer II',
+    'Software Development Engineer III', 'Associate Software Engineer',
+    'Junior Software Engineer', 'Software Developer', 'Senior Software Developer',
+    'Lead Software Developer', 'Full Stack Developer', 'Senior Full Stack Developer',
+    'Frontend Developer', 'Senior Frontend Developer', 'Backend Developer',
+    'Senior Backend Developer', 'Mobile Developer', 'iOS Developer', 'Android Developer',
+    'React Developer', 'Node.js Developer', 'Python Developer', 'Java Developer',
+    'C++ Developer', '.NET Developer', 'DevOps Engineer', 'Senior DevOps Engineer',
+    'Site Reliability Engineer (SRE)', 'Cloud Engineer', 'Senior Cloud Engineer',
+    // Data & Analytics
+    'Data Engineer', 'Senior Data Engineer', 'Data Scientist', 'Senior Data Scientist',
+    'Data Analyst', 'Senior Data Analyst', 'Business Analyst', 'Senior Business Analyst',
+    'Machine Learning Engineer', 'Senior ML Engineer', 'AI Engineer', 'MLOps Engineer',
+    'Analytics Engineer', 'Business Intelligence Engineer', 'Data Architect',
+    // Product & Design
+    'Product Manager', 'Senior Product Manager', 'Principal Product Manager',
+    'Associate Product Manager', 'Product Owner', 'Senior Product Owner',
+    'UX Designer', 'Senior UX Designer', 'UI Designer', 'Senior UI Designer',
+    'Product Designer', 'Senior Product Designer', 'Design Lead', 'Creative Director',
+    // QA & Testing
+    'QA Engineer', 'Senior QA Engineer', 'Test Engineer', 'Senior Test Engineer',
+    'QA Lead', 'Test Lead', 'Automation Engineer', 'Senior Automation Engineer',
+    'SDET (Software Development Engineer in Test)', 'Senior SDET',
+    // Management
+    'Engineering Manager', 'Senior Engineering Manager', 'Engineering Director',
+    'VP of Engineering', 'CTO', 'Technical Lead', 'Tech Lead', 'Team Lead',
+    'Project Manager', 'Senior Project Manager', 'Program Manager',
+    'Delivery Manager', 'Senior Delivery Manager', 'Account Manager',
+    // Security
+    'Security Engineer', 'Senior Security Engineer', 'Security Architect',
+    'Cybersecurity Analyst', 'Information Security Engineer', 'Penetration Tester',
+    // Others
+    'Solution Architect', 'Senior Solution Architect', 'Technical Architect',
+    'System Architect', 'Enterprise Architect', 'Sales Engineer', 'Pre-Sales Engineer',
+    'Customer Success Manager', 'Technical Writer', 'Technical Program Manager',
+    'Scrum Master', 'Agile Coach', 'IT Consultant', 'Senior IT Consultant',
+    'Database Administrator', 'DBA', 'Network Engineer', 'System Administrator',
+    'IT Support Engineer', 'Help Desk Technician', 'Business Development Manager',
+    'Sales Manager', 'Marketing Manager', 'Digital Marketing Manager',
+    'Content Manager', 'Social Media Manager', 'HR Manager', 'Recruiter',
+    'Finance Manager', 'Accountant', 'Operations Manager', 'Supply Chain Manager'
+  ].sort()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -353,12 +480,41 @@ function App() {
                     <input
                       id="company"
                       type="text"
-                      placeholder="Enter company name (e.g., Google, Microsoft)"
+                      list="companies-list"
+                      placeholder="Type or select company name"
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     />
+                    <datalist id="companies-list">
+                      {companies.map(company => (
+                        <option key={company} value={company} />
+                      ))}
+                    </datalist>
                     <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
                       Company-specific calculations may apply
+                    </small>
+                  </div>
+
+                  <div className="form-section">
+                    <label htmlFor="designation">
+                      <User size={20} />
+                      Designation/Position (Optional)
+                    </label>
+                    <input
+                      id="designation"
+                      type="text"
+                      list="designations-list"
+                      placeholder="Type or select your designation"
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    />
+                    <datalist id="designations-list">
+                      {designations.map(designation => (
+                        <option key={designation} value={designation} />
+                      ))}
+                    </datalist>
+                    <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                      Your job title or role
                     </small>
                   </div>
 

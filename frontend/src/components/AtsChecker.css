@@ -404,11 +404,18 @@
 }
 
 .results-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   margin-bottom: 0.5rem;
   gap: 1rem;
+  width: 100%;
+}
+
+.results-title {
+  text-align: center;
+  justify-self: center;
+  grid-column: 2;
 }
 
 .results-header-left {

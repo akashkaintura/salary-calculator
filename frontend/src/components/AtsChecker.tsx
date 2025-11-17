@@ -291,34 +291,31 @@ export default function AtsChecker() {
             ) : (
                 <div className="ats-results">
                     <div className="results-header">
-                        <div className="results-header-left">
-                            <button
-                                onClick={() => {
-                                    if (currentIndex > 0) {
-                                        const prevIndex = currentIndex - 1;
-                                        setCurrentIndex(prevIndex);
-                                        setResult(history[prevIndex]);
-                                        window.history.pushState(
-                                            { resultIndex: prevIndex },
-                                            '',
-                                            `?ats-check=${prevIndex}`
-                                        );
-                                    } else {
-                                        setResult(null);
-                                        setFile(null);
-                                        setCurrentIndex(-1);
-                                        setHistory([]);
-                                        window.history.pushState({ resultIndex: -1 }, '', window.location.pathname);
-                                    }
-                                }}
-                                className="back-btn"
-                                disabled={currentIndex === -1}
-                            >
-                                <ArrowLeft size={18} />
-                                {currentIndex > 0 ? 'Previous' : 'Back'}
-                            </button>
-                            <h3>Analysis Results</h3>
-                        </div>
+                        <button
+                            onClick={() => {
+                                if (currentIndex > 0) {
+                                    const prevIndex = currentIndex - 1;
+                                    setCurrentIndex(prevIndex);
+                                    setResult(history[prevIndex]);
+                                    window.history.pushState(
+                                        { resultIndex: prevIndex },
+                                        '',
+                                        `?ats-check=${prevIndex}`
+                                    );
+                                } else {
+                                    setResult(null);
+                                    setFile(null);
+                                    setCurrentIndex(-1);
+                                    setHistory([]);
+                                    window.history.pushState({ resultIndex: -1 }, '', window.location.pathname);
+                                }
+                            }}
+                            className="back-btn"
+                        >
+                            <ArrowLeft size={18} />
+                            {currentIndex > 0 ? 'Previous' : 'Back'}
+                        </button>
+                        <h3 className="results-title">Analysis Results</h3>
                         <button
                             onClick={() => {
                                 setResult(null);

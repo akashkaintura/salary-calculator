@@ -15,26 +15,41 @@ async function bootstrap() {
     maxAge: 86400, // 24 hours
   });
 
-  // Security headers middleware
+  // Enhanced security headers middleware
   app.use((req, res, next) => {
     // Prevent XSS attacks
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    // Content Security Policy
+    
+    // Content Security Policy (more restrictive)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ${frontendUrl}; frame-ancestors 'none';`
     );
+    
+    // Additional security headers
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    res.setHeader('X-DNS-Prefetch-Control', 'off');
+    res.setHeader('X-Download-Options', 'noopen');
+    res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+    
     next();
   });
 
-  // Global validation pipe
+  // Global validation pipe with enhanced security
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      transform: true,
+      whitelist: true, // Strip properties that don't have decorators
+      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are sent
+      transform: true, // Automatically transform payloads to DTO instances
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      disableErrorMessages: process.env.NODE_ENV === 'production', // Hide error details in production
     }),
   );
 

@@ -5,6 +5,8 @@ import { SalaryCalculation } from './entities/salary-calculation.entity';
 import { CityTaxData } from './entities/city-tax-data.entity';
 import { CalculateSalaryDto } from './dto/calculate-salary.dto';
 import { CreateCityTaxDto } from './dto/create-city-tax.dto';
+import { sanitizeCity, sanitizeCompany } from '../common/utils/sanitize.util';
+import { CommonService } from '../common/common.service';
 
 export interface SalaryBreakdown {
   ctc: number;
@@ -33,22 +35,40 @@ export class SalaryService {
     private salaryRepository: Repository<SalaryCalculation>,
     @InjectRepository(CityTaxData)
     private cityTaxRepository: Repository<CityTaxData>,
+    private commonService: CommonService,
   ) { }
 
   async calculateSalary(dto: CalculateSalaryDto, userId: string): Promise<SalaryBreakdown> {
+    // Sanitize inputs to prevent XSS and injection attacks
+    const sanitizedCity = sanitizeCity(dto.city);
+    const sanitizedCompany = dto.company ? sanitizeCompany(dto.company) : undefined;
+
     const breakdown = await this.calculateIndianSalary(
       dto.ctc,
-      dto.city,
+      sanitizedCity,
       dto.variablePay || 0,
       dto.insurance || 0,
-      dto.company,
+      sanitizedCompany,
       dto.isRelocation || false,
       dto.relocationAllowance || 0,
     );
 
-    // Save to database
+    // Track usage for analytics
+    if (sanitizedCity) {
+      await this.commonService.incrementCityUsage(sanitizedCity);
+    }
+    if (sanitizedCompany) {
+      await this.commonService.incrementCompanyUsage(sanitizedCompany);
+    }
+    if (dto.designation) {
+      await this.commonService.incrementDesignationUsage(dto.designation);
+    }
+
+    // Save to database (using sanitized values)
     const calculation = this.salaryRepository.create({
       ...dto,
+      city: sanitizedCity,
+      company: sanitizedCompany,
       ...breakdown,
       userId,
     });

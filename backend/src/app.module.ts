@@ -7,12 +7,16 @@ import { StatisticsModule } from './statistics/statistics.module';
 import { AdminModule } from './admin/admin.module';
 import { AtsModule } from './ats/ats.module';
 import { PaymentModule } from './payment/payment.module';
+import { CommonModule } from './common/common.module';
 import { SalaryCalculation } from './salary/entities/salary-calculation.entity';
 import { CityTaxData } from './salary/entities/city-tax-data.entity';
 import { User } from './user/entities/user.entity';
 import { AtsUsage } from './ats/entities/ats-usage.entity';
 import { AtsCheck } from './ats/entities/ats-check.entity';
 import { Payment } from './payment/entities/payment.entity';
+import { City } from './common/entities/city.entity';
+import { Company } from './common/entities/company.entity';
+import { Designation } from './common/entities/designation.entity';
 
 @Module({
   imports: [
@@ -28,7 +32,7 @@ import { Payment } from './payment/entities/payment.entity';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'salary_calculator',
-      entities: [SalaryCalculation, CityTaxData, User, AtsUsage, AtsCheck, Payment],
+      entities: [SalaryCalculation, CityTaxData, User, AtsUsage, AtsCheck, Payment, City, Company, Designation],
       // Enable synchronize - set to true to auto-create tables (use migrations in production for safety)
       synchronize: true, // Temporarily enabled to create missing tables
       logging: process.env.NODE_ENV === 'development',
@@ -40,6 +44,7 @@ import { Payment } from './payment/entities/payment.entity';
     AdminModule,
     AtsModule,
     PaymentModule,
+    CommonModule,
   ],
 })
 export class AppModule { }

@@ -4,9 +4,13 @@ import { SalaryController } from './salary.controller';
 import { SalaryService } from './salary.service';
 import { SalaryCalculation } from './entities/salary-calculation.entity';
 import { CityTaxData } from './entities/city-tax-data.entity';
+import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SalaryCalculation, CityTaxData])],
+  imports: [
+    TypeOrmModule.forFeature([SalaryCalculation, CityTaxData]),
+    CommonModule,
+  ],
   controllers: [SalaryController],
   providers: [SalaryService],
   exports: [SalaryService],

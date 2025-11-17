@@ -44,11 +44,20 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
     // Initiates Google OAuth flow
+    // This will return 401 if GoogleStrategy is not configured
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req, @Res() res) {
+    // Check if Google OAuth is configured
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return res.status(503).json({
+        error: 'Google OAuth is not configured',
+        message: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables',
+      });
+    }
+
     const user = await this.authService.validateGoogleUser(req.user);
     const result = await this.authService.login(user);
     

@@ -1,8 +1,4 @@
-import { useState, useEffect } from 'react';
-import { FileText, Upload, CheckCircle, XCircle, AlertCircle, Clock, History, TrendingUp, Building2, Sparkles, Zap, Construction } from 'lucide-react';
-import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
-import UPIPayment from './UPIPayment';
+import { FileText, CheckCircle, Construction } from 'lucide-react';
 import './AtsChecker.css';
 
 const getApiBaseUrl = () => {

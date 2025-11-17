@@ -146,6 +146,22 @@ export default function AtsChecker() {
                 setError('Please log in to use the ATS checker');
             } else if (err.response?.status === 403) {
                 setError(err.response?.data?.message || 'You have reached the usage limit. Please try again later.');
+            } else if (err.response?.status === 400) {
+                // Better error messages for PDF parsing errors
+                const errorMsg = err.response?.data?.message || 'Failed to analyze resume. Please try again.';
+                if (errorMsg.includes('image-based') || errorMsg.includes('scanned')) {
+                    setError(
+                        '⚠️ This PDF appears to be a scanned image and cannot be analyzed. ' +
+                        'Please upload a PDF with selectable text. ' +
+                        'Tip: If you have a scanned PDF, use OCR software to convert it to text first, or recreate it as a text-based PDF.'
+                    );
+                } else if (errorMsg.includes('password-protected')) {
+                    setError('⚠️ This PDF is password-protected. Please remove the password and try again.');
+                } else if (errorMsg.includes('corrupted') || errorMsg.includes('invalid')) {
+                    setError('⚠️ This PDF file appears to be corrupted or invalid. Please try with a different PDF file.');
+                } else {
+                    setError(errorMsg);
+                }
             } else {
                 setError(err.response?.data?.message || 'Failed to analyze resume. Please try again.');
             }

@@ -334,9 +334,6 @@ export default function AtsChecker() {
             </div>
         </div>
     );
-
-    // Original ATS checker code (commented out for now)
-    /*
     return (
         <>
             {showUPIPayment && paymentOrder && (
@@ -703,5 +700,6 @@ export default function AtsChecker() {
             </div>
         </>
     );
+    */
 }
 

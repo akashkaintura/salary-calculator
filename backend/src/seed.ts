@@ -7,6 +7,10 @@ import * as bcrypt from 'bcryptjs';
 // Load environment variables
 dotenv.config();
 
+import { City } from './common/entities/city.entity';
+import { Company } from './common/entities/company.entity';
+import { Designation } from './common/entities/designation.entity';
+
 const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
@@ -15,7 +19,7 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'salary_calculator',
-  entities: [SalaryCalculation, User],
+  entities: [SalaryCalculation, User, City, Company, Designation],
   synchronize: true, // Sync schema before seeding
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });

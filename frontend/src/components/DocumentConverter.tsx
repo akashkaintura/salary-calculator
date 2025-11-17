@@ -122,7 +122,7 @@ export default function DocumentConverter() {
     const [showComingSoon, setShowComingSoon] = useState(false);
     const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
-    const handleToolClick = (toolId: string, toolTitle: string) => {
+    const handleToolClick = (toolTitle: string) => {
         setSelectedTool(toolTitle);
         setShowComingSoon(true);
     };
@@ -142,7 +142,7 @@ export default function DocumentConverter() {
                     <div 
                         key={tool.id} 
                         className="tool-card"
-                        onClick={() => handleToolClick(tool.id, tool.title)}
+                        onClick={() => handleToolClick(tool.title)}
                     >
                         <div className="tool-icon" style={{ color: tool.color }}>
                             {tool.icon}

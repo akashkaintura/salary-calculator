@@ -533,6 +533,9 @@ function App() {
                   <span className="value">-₹{result.annualDeductions.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
+              <div className="disclaimer-message">
+                <p>⚠️ <strong>Disclaimer:</strong> These calculations are estimates and may not be 100% accurate. There can be up to a 10% variance from actual salary calculations due to company-specific policies, tax exemptions, and other factors.</p>
+              </div>
             </div>
           </div>
         )}

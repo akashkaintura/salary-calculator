@@ -73,20 +73,51 @@ function App() {
   const [activeTab, setActiveTab] = useState<'salary' | 'ats' | 'converter' | 'admin'>('salary')
   const [showResultModal, setShowResultModal] = useState(false)
   const [indianCities, setIndianCities] = useState<string[]>([])
+  const [topCities, setTopCities] = useState<string[]>([])
+  const [otherCities, setOtherCities] = useState<string[]>([])
   const [companies, setCompanies] = useState<string[]>([])
   const [designations, setDesignations] = useState<string[]>([])
   const [loadingData, setLoadingData] = useState(true)
 
-  // Handle auth callback
+  // Handle auth callback - SECURITY: Remove tokens from URL immediately
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const tokenParam = urlParams.get('token')
-    const userParam = urlParams.get('user')
+    // Only process callback if we're on the callback path and have params
+    if (window.location.pathname.includes('/auth/callback') || window.location.search.includes('token=')) {
+      const urlParams = new URLSearchParams(window.location.search)
+      const tokenParam = urlParams.get('token')
+      const userParam = urlParams.get('user')
 
-    if (tokenParam && userParam) {
-      login(tokenParam, JSON.parse(decodeURIComponent(userParam)))
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname)
+      if (tokenParam && userParam) {
+        try {
+          // Parse user data before cleaning URL
+          const userData = JSON.parse(decodeURIComponent(userParam))
+          
+          // Immediately clean URL to prevent token exposure
+          window.history.replaceState({}, document.title, '/')
+          
+          // Login with the token and user data
+          login(tokenParam, userData)
+          
+          // Use setTimeout to ensure state is saved before redirect
+          setTimeout(() => {
+            // Redirect to home page to ensure clean URL (only if still on callback)
+            if (window.location.pathname.includes('/auth/callback') || window.location.search.includes('token=')) {
+              window.location.replace('/')
+            }
+          }, 100)
+        } catch (error) {
+          console.error('Failed to parse auth callback:', error)
+          // Clean URL even on error
+          window.history.replaceState({}, document.title, '/')
+          window.location.replace('/')
+        }
+      } else {
+        // No token/user params but on callback path - redirect to home
+        window.history.replaceState({}, document.title, '/')
+        if (window.location.pathname.includes('/auth/callback')) {
+          window.location.replace('/')
+        }
+      }
     }
   }, [login])
 
@@ -107,13 +138,23 @@ function App() {
           axios.get(`${API_BASE_URL}/api/common/companies`),
           axios.get(`${API_BASE_URL}/api/common/designations`),
         ])
-        setIndianCities(citiesRes.data.cities || [])
+        const allCities = citiesRes.data.cities || []
+        setIndianCities(allCities)
+        
+        // Separate top 10 cities from the rest
+        const top10 = allCities.slice(0, 10)
+        const rest = allCities.slice(10)
+        setTopCities(top10)
+        setOtherCities(rest)
+        
         setCompanies(companiesRes.data.companies || [])
         setDesignations(designationsRes.data.designations || [])
       } catch (err) {
         console.error('Failed to load common data:', err)
         // Fallback to empty arrays if API fails
         setIndianCities([])
+        setTopCities([])
+        setOtherCities([])
         setCompanies([])
         setDesignations([])
       } finally {
@@ -372,9 +413,24 @@ function App() {
                       required
                     >
                       <option value="">Select your city</option>
-                      {indianCities.map(city => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
+                      {topCities.length > 0 && (
+                        <>
+                          <optgroup label="🏙️ Top Cities">
+                            {topCities.map(city => (
+                              <option key={city} value={city}>{city}</option>
+                            ))}
+                          </optgroup>
+                        </>
+                      )}
+                      {otherCities.length > 0 && (
+                        <>
+                          <optgroup label="📍 Other Cities">
+                            {otherCities.map(city => (
+                              <option key={city} value={city}>{city}</option>
+                            ))}
+                          </optgroup>
+                        </>
+                      )}
                     </select>
                   </div>
 

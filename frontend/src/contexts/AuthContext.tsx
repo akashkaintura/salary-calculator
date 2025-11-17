@@ -80,10 +80,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = (newToken: string, newUser: User) => {
+    // Ensure role and isAdmin are set correctly
+    const userData = {
+      ...newUser,
+      role: newUser.role || 'user',
+      isAdmin: newUser.isAdmin || newUser.role === 'admin',
+    };
     setToken(newToken);
-    setUser(newUser);
+    setUser(userData);
     localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {

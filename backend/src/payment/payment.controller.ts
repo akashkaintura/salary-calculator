@@ -14,7 +14,7 @@ export class PaymentController {
     @CurrentUser() user: User,
     @Body() body: { checkId?: string },
   ) {
-    const amount = 99; // ₹99 INR
+    const amount = 49; // ₹49 INR - Year End Offer (50% off)
     
     const order = await this.paymentService.createUPIOrder(
       user.id,

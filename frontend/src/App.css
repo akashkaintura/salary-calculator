@@ -590,9 +590,70 @@
 }
 
 @media (max-width: 768px) {
+  .app {
+    padding: 1rem 0.5rem;
+  }
+
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-menu {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tab-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .form-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .form-section {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-section label {
+    font-size: 0.9rem;
+  }
+
+  .form-section input,
+  .form-section select {
+    font-size: 0.95rem;
+    padding: 0.75rem;
+  }
+
+  .submit-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
   .modal-content {
     max-width: 100%;
     max-height: 95vh;
+    margin: 0.5rem;
   }
 
   .modal-header {
@@ -600,7 +661,12 @@
   }
 
   .modal-content .result-grid {
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  .result-item {
+    padding: 1rem;
   }
 
   .disclaimer-message {
@@ -609,5 +675,43 @@
 
   .disclaimer-message p {
     font-size: 0.85rem;
+  }
+
+  .content-wrapper.centered {
+    padding: 0.5rem;
+  }
+
+  .history-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
+
+/* Safari-specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .upload-area {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tool-card {
+    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+  }
+
+  .analyze-btn,
+  .upgrade-btn {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Chrome/Edge specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .tabs {
+    scrollbar-width: thin;
   }
 }

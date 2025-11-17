@@ -433,12 +433,51 @@ export default function AtsChecker() {
                     {/* Premium Features */}
                     {!isPremium && (
                         <div className="premium-upgrade-card">
+                            <div className="year-end-badge">🎉 Year End Offer</div>
                             <Star size={32} />
                             <h4>Unlock Premium Features</h4>
-                            <p>Get detailed keyword analysis, advanced optimization tips, and personalized resume enhancement recommendations</p>
+                            <p className="premium-description">Get detailed keyword analysis, advanced optimization tips, and personalized resume enhancement recommendations</p>
+                            
+                            {/* Show Resume Issues */}
+                            {result.weaknesses.length > 0 && (
+                                <div className="resume-issues-preview">
+                                    <h5>Issues Found in Your Resume:</h5>
+                                    <ul>
+                                        {result.weaknesses.slice(0, 3).map((weakness, idx) => (
+                                            <li key={idx}>
+                                                <AlertCircle size={16} />
+                                                {weakness}
+                                            </li>
+                                        ))}
+                                        {result.weaknesses.length > 3 && (
+                                            <li className="more-issues">+{result.weaknesses.length - 3} more issues</li>
+                                        )}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Premium Features List */}
+                            <div className="premium-features-list">
+                                <h5>With Premium, You'll Get:</h5>
+                                <ul>
+                                    <li>✅ Detailed keyword optimization suggestions</li>
+                                    <li>✅ Missing keywords specific to your industry</li>
+                                    <li>✅ Keyword replacement recommendations</li>
+                                    <li>✅ Industry-specific optimization tips</li>
+                                    <li>✅ Advanced resume enhancement strategies</li>
+                                    <li>✅ Unlimited ATS checks (no 3-check limit)</li>
+                                </ul>
+                            </div>
+
+                            <div className="premium-pricing">
+                                <span className="original-price">₹99</span>
+                                <span className="current-price">₹49</span>
+                                <span className="discount-badge">50% OFF</span>
+                            </div>
                             <button onClick={handleUpgrade} className="upgrade-btn">
-                                Upgrade to Premium - ₹99
+                                Upgrade to Premium - ₹49
                             </button>
+                            <p className="premium-note">Limited time offer - Year End Special!</p>
                         </div>
                     )}
 

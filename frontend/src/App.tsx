@@ -71,7 +71,6 @@ function App() {
   const [showHistory, setShowHistory] = useState(false)
   const [activeTab, setActiveTab] = useState<'salary' | 'ats' | 'converter'>('salary')
   const [showResultModal, setShowResultModal] = useState(false)
-  const [indianCities, setIndianCities] = useState<string[]>([])
   const [topCities, setTopCities] = useState<string[]>([])
   const [otherCities, setOtherCities] = useState<string[]>([])
   const [companies, setCompanies] = useState<string[]>([])
@@ -138,7 +137,6 @@ function App() {
           axios.get(`${API_BASE_URL}/api/common/designations`),
         ])
         const allCities = citiesRes.data.cities || []
-        setIndianCities(allCities)
         
         // Separate top 10 cities from the rest
         const top10 = allCities.slice(0, 10)
@@ -151,7 +149,6 @@ function App() {
       } catch (err) {
         console.error('Failed to load common data:', err)
         // Fallback to empty arrays if API fails
-        setIndianCities([])
         setTopCities([])
         setOtherCities([])
         setCompanies([])

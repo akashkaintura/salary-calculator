@@ -69,6 +69,9 @@ export class SalaryCalculation {
   incomeTax: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
+  gratuity: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
   inHandSalary: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })

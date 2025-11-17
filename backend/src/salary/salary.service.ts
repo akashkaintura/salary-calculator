@@ -21,6 +21,7 @@ export interface SalaryBreakdown {
   esi: number;
   professionalTax: number;
   incomeTax: number;
+  gratuity: number;
   inHandSalary: number;
   monthlyDeductions: number;
   annualDeductions: number;
@@ -149,7 +150,18 @@ export class SalaryService {
     const incomeTaxAnnual = this.calculateIncomeTax(annualTaxableIncome);
     const incomeTax = incomeTaxAnnual / 12;
 
-    // Monthly deductions
+    // Gratuity Calculation
+    // Gratuity = (Last drawn salary × 15/26) × Number of years of service
+    // For calculation purposes, we assume 5 years of service (typical for gratuity eligibility)
+    // Last drawn salary = Basic Salary + DA (Dearness Allowance, typically part of basic)
+    // Formula: (Basic Salary × 15/26) × Years of Service
+    // Monthly gratuity accrual = (Basic Salary × 15/26) × (1/12) for 1 year
+    // For annual calculation: (Basic Salary × 15/26) × Years
+    const yearsOfService = 5; // Assuming 5 years for calculation
+    const gratuityAnnual = (basicSalaryAnnual * (15/26)) * yearsOfService;
+    const gratuity = gratuityAnnual / 12; // Monthly gratuity accrual
+
+    // Monthly deductions (gratuity is not a deduction, it's a benefit accrual)
     const monthlyDeductions = pf + esi + professionalTax + incomeTax;
     const inHandSalary = grossMonthly - monthlyDeductions;
     const annualDeductions = monthlyDeductions * 12;
@@ -172,6 +184,7 @@ export class SalaryService {
       esi: Number(esi.toFixed(2)),
       professionalTax: Number(professionalTax.toFixed(2)),
       incomeTax: Number(incomeTax.toFixed(2)),
+      gratuity: Number(gratuity.toFixed(2)),
       inHandSalary: Number(inHandSalary.toFixed(2)),
       monthlyDeductions: Number(monthlyDeductions.toFixed(2)),
       annualDeductions: Number(annualDeductions.toFixed(2)),

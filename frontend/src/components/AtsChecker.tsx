@@ -53,6 +53,9 @@ export default function AtsChecker() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [history, setHistory] = useState<AtsCheckResult[]>([]);
     const [currentIndex, setCurrentIndex] = useState<number>(-1);
+    const [selectedFix, setSelectedFix] = useState<string | null>(null);
+    const [showFixDetails, setShowFixDetails] = useState(false);
+    const [fixAnimation, setFixAnimation] = useState(false);
 
     const isPremium = user?.isPremium || false;
 
@@ -416,18 +419,43 @@ export default function AtsChecker() {
                         </div>
                     )}
 
-                    {/* Weaknesses */}
+                    {/* Weaknesses - Interactive Fix Suggestions */}
                     {result.weaknesses.length > 0 && (
                         <div className="weaknesses-section">
                             <h4>
                                 <AlertCircle size={20} />
-                                Areas for Improvement
+                                What Needs to Be Fixed
                             </h4>
-                            <ul>
+                            <div className="fix-suggestions-grid">
                                 {result.weaknesses.map((weakness, idx) => (
-                                    <li key={idx}>{weakness}</li>
+                                    <div
+                                        key={idx}
+                                        className={`fix-suggestion-card ${selectedFix === weakness ? 'active' : ''} ${fixAnimation ? 'animate' : ''}`}
+                                        onClick={() => {
+                                            if (isPremium) {
+                                                setSelectedFix(weakness);
+                                                setShowFixDetails(true);
+                                                setFixAnimation(true);
+                                                setTimeout(() => setFixAnimation(false), 600);
+                                            } else {
+                                                setSelectedFix(weakness);
+                                                setShowPayment(true);
+                                            }
+                                        }}
+                                    >
+                                        <div className="fix-icon">
+                                            <AlertCircle size={20} />
+                                        </div>
+                                        <div className="fix-content">
+                                            <h5>{weakness}</h5>
+                                            {!isPremium && (
+                                                <span className="premium-badge">Premium</span>
+                                            )}
+                                        </div>
+                                        <div className="fix-arrow">→</div>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
                     )}
 
@@ -514,6 +542,115 @@ export default function AtsChecker() {
                     onClose={() => setShowPayment(false)}
                     onSuccess={handlePaymentSuccess}
                 />
+            )}
+
+            {/* Fix Details Modal - Premium Feature */}
+            {showFixDetails && selectedFix && isPremium && (
+                <div className="fix-details-modal-overlay" onClick={() => setShowFixDetails(false)}>
+                    <div className="fix-details-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-modal-btn" onClick={() => setShowFixDetails(false)}>
+                            <X size={24} />
+                        </button>
+                        <div className="fix-details-header">
+                            <Sparkles size={32} className="sparkle-animation" />
+                            <h3>How to Fix: {selectedFix}</h3>
+                        </div>
+                        <div className="fix-details-content">
+                            {result.premiumFeatures && (
+                                <>
+                                    {result.premiumFeatures.resumeOptimizationTips
+                                        .filter(tip => tip.toLowerCase().includes(selectedFix.toLowerCase().split(' ')[0]))
+                                        .map((tip, idx) => (
+                                            <div key={idx} className="fix-tip-card">
+                                                <div className="tip-number">{idx + 1}</div>
+                                                <p>{tip}</p>
+                                            </div>
+                                        ))}
+                                    {result.premiumFeatures.keywordReplacements
+                                        .filter(replacement => replacement.reason.toLowerCase().includes(selectedFix.toLowerCase().split(' ')[0]))
+                                        .map((replacement, idx) => (
+                                            <div key={idx} className="keyword-replacement-card">
+                                                <div className="replacement-before">
+                                                    <span className="label">Current:</span>
+                                                    <span className="value">{replacement.current}</span>
+                                                </div>
+                                                <div className="replacement-arrow">→</div>
+                                                <div className="replacement-after">
+                                                    <span className="label">Suggested:</span>
+                                                    <span className="value">{replacement.suggested}</span>
+                                                </div>
+                                                <div className="replacement-reason">
+                                                    <strong>Why:</strong> {replacement.reason}
+                                                </div>
+                                            </div>
+                                        ))}
+                                </>
+                            )}
+                            {(!result.premiumFeatures || 
+                              (result.premiumFeatures.resumeOptimizationTips.length === 0 && 
+                               result.premiumFeatures.keywordReplacements.length === 0)) && (
+                                <div className="fix-tip-card">
+                                    <p>Detailed fix instructions for "{selectedFix}" will be available here. This feature provides step-by-step guidance to improve your resume.</p>
+                                </div>
+                            )}
+                        </div>
+                        <button className="apply-fix-btn" onClick={() => setShowFixDetails(false)}>
+                            Got it! ✓
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Premium Unlock Modal */}
+            {showPayment && !paymentOrder && selectedFix && (
+                <div className="premium-unlock-modal-overlay" onClick={() => {
+                    setShowPayment(false);
+                    setSelectedFix(null);
+                }}>
+                    <div className="premium-unlock-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-modal-btn" onClick={() => {
+                            setShowPayment(false);
+                            setSelectedFix(null);
+                        }}>
+                            <X size={24} />
+                        </button>
+                        <div className="unlock-header">
+                            <Star size={48} className="star-glow" />
+                            <h3>Unlock Detailed Fix</h3>
+                            <p>Get step-by-step guidance to fix: <strong>{selectedFix}</strong></p>
+                        </div>
+                        <div className="unlock-features">
+                            <div className="unlock-feature-item">
+                                <CheckCircle size={20} />
+                                <span>Detailed fix instructions</span>
+                            </div>
+                            <div className="unlock-feature-item">
+                                <CheckCircle size={20} />
+                                <span>Keyword replacement suggestions</span>
+                            </div>
+                            <div className="unlock-feature-item">
+                                <CheckCircle size={20} />
+                                <span>Industry-specific tips</span>
+                            </div>
+                            <div className="unlock-feature-item">
+                                <CheckCircle size={20} />
+                                <span>Animated step-by-step guide</span>
+                            </div>
+                        </div>
+                        <div className="unlock-pricing">
+                            <span className="original-price">₹99</span>
+                            <span className="current-price">₹49</span>
+                            <span className="discount-badge">50% OFF</span>
+                        </div>
+                        <button 
+                            className="unlock-now-btn"
+                            onClick={handleUpgrade}
+                        >
+                            Unlock Now - ₹49
+                        </button>
+                        <p className="unlock-note">Year End Special Offer - Limited Time!</p>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -434,11 +434,13 @@ export default function AtsChecker() {
                                             if (isPremium) {
                                                 setSelectedFix(weakness);
                                                 setShowFixDetails(true);
+                                                setShowPayment(false); // Ensure payment modal is closed
                                                 setFixAnimation(true);
                                                 setTimeout(() => setFixAnimation(false), 600);
                                             } else {
                                                 setSelectedFix(weakness);
                                                 setShowPayment(true);
+                                                setShowFixDetails(false); // Ensure fix details modal is closed
                                             }
                                         }}
                                     >
@@ -531,8 +533,8 @@ export default function AtsChecker() {
                 </div>
             )}
 
-            {/* Fix Details Modal - Premium Feature */}
-            {showFixDetails && selectedFix && isPremium && (
+            {/* Fix Details Modal - Premium Feature ONLY */}
+            {showFixDetails && selectedFix && isPremium && !showPayment && (
                 <div className="fix-details-modal-overlay" onClick={() => setShowFixDetails(false)}>
                     <div className="fix-details-modal" onClick={(e) => e.stopPropagation()}>
                         <button className="close-modal-btn" onClick={() => setShowFixDetails(false)}>
